@@ -76,6 +76,7 @@ WorkingDirectory=${REMOTE_DIR}/standalone
 Environment=NODE_ENV=production
 Environment=PORT=${INTERNAL_PORT}
 Environment=HOSTNAME=127.0.0.1
+Environment=RATE_LIMIT_DISABLED=1
 ExecStart=${NODE_BIN} server.js
 Restart=always
 RestartSec=3

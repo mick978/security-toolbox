@@ -11,6 +11,10 @@ const WINDOW_MS = 60_000;
 const MAX_HITS  = 10;
 
 export function checkRateLimit(key: string): { ok: boolean; retryAfterSec: number; remaining: number } {
+  // 本人自用开关：env RATE_LIMIT_DISABLED=1 直接放行
+  if (process.env.RATE_LIMIT_DISABLED === "1") {
+    return { ok: true, retryAfterSec: 0, remaining: 9999 };
+  }
   const now = Date.now();
   let b = buckets.get(key);
   if (!b) { b = { hits: [] }; buckets.set(key, b); }

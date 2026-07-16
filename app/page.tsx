@@ -42,6 +42,13 @@ export default function HomePage() {
               <Terminal className="h-4 w-4" />
               场景排查速查 · 20 案例
             </Link>
+            <Link
+              href="/ip-intel"
+              className="inline-flex items-center gap-2 rounded-md border border-sky-500/50 bg-sky-500/10 text-sky-200 px-5 py-2.5 text-sm font-medium hover:bg-sky-500/20"
+            >
+              <Icons.Globe className="h-4 w-4" />
+              IP 情报查询 · 地理 + Shodan
+            </Link>
           </div>
           <div className="mt-10 flex flex-wrap gap-6 text-sm text-muted-foreground">
             <Feature icon={Zap} text="⌘K 全局搜索" />
