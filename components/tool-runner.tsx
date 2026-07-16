@@ -8,7 +8,7 @@ import { Play, Loader2, Terminal, AlertTriangle, CheckCircle2, XCircle } from "l
 import { cn } from "@/lib/utils";
 
 // 复制 ArgSpec 类型（避免 client 引 server-only lib）
-type ArgType = "domain" | "ip" | "host" | "port" | "url" | "enum" | "flag";
+type ArgType = "domain" | "ip" | "host" | "port" | "url" | "enum" | "flag" | "cipher";
 export interface ArgSpec {
   name: string;
   label: string;

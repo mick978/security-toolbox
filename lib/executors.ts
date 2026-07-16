@@ -2,7 +2,7 @@
 // 网页执行器白名单 + 参数校验 + execFile（无 shell 注入）
 // 只包含调试类工具（DNS / 连通性 / HTTP / TLS），攻击类拒绝上线
 
-export type ArgType = "domain" | "ip" | "host" | "port" | "url" | "enum" | "flag";
+export type ArgType = "domain" | "ip" | "host" | "port" | "url" | "enum" | "flag" | "cipher";
 
 export interface ArgSpec {
   name: string;               // 传给后端的 key
@@ -69,6 +69,11 @@ export function validateArg(spec: ArgSpec, raw: string | undefined): string {
     case "flag":
       if (v !== "1" && v !== "0" && v !== "true" && v !== "false")
         throw new Error(`${spec.label} 必须是布尔`);
+      break;
+    case "cipher":
+      // OpenSSL cipher string: 字母数字 + : ! + - _
+      if (!/^[A-Za-z0-9:!+\-_]{1,200}$/.test(v))
+        throw new Error(`加密套件格式不合法（允许 A-Z0-9 和 : ! + - _）`);
       break;
   }
   return v;
@@ -188,18 +193,51 @@ export const EXECUTORS: ExecutorSpec[] = [
   {
     slug: "openssl-sclient",
     binary: "openssl",
-    description: "TLS 证书 & 握手信息（s_client -brief）",
-    timeoutMs: 12000,
+    description: "TLS 握手 / 证书链 / TLS 版本 / 加密套件测试",
+    timeoutMs: 15000,
     argsTemplate: [
       { name: "host", label: "主机", type: "host", required: true, placeholder: "example.com" },
       { name: "port", label: "端口", type: "port", default: "443" },
-      { name: "mode", label: "模式", type: "enum", options: ["brief", "cert"], default: "brief" },
+      {
+        name: "mode",
+        label: "模式",
+        type: "enum",
+        options: ["brief", "chain", "tls10", "tls11", "tls12", "tls13", "cipher"],
+        default: "brief",
+        help: "brief=概览 / chain=完整证书链 / tls1x=强制 TLS 版本 / cipher=测特定加密套件",
+      },
+      {
+        name: "cipher",
+        label: "加密套件（仅 cipher 模式）",
+        type: "cipher",
+        placeholder: "ECDHE-RSA-AES256-GCM-SHA384",
+        help: "TLS1.2 及以下用 -cipher；仅 mode=cipher 时生效",
+      },
     ],
     buildArgs: (f) => {
       const target = `${f.host}:${f.port || "443"}`;
-      const base = ["s_client", "-connect", target, "-servername", f.host, "-verify_return_error"];
-      // 通过 stdin 关闭连接；这里让 route 层塞 </dev/null 的等价——传空 stdin
-      return f.mode === "cert" ? [...base, "-showcerts"] : [...base, "-brief"];
+      const base = ["s_client", "-connect", target, "-servername", f.host];
+      switch (f.mode) {
+        case "chain":
+          // 展开完整证书链，握手完 -verify_return_error 会输出 verify 结果
+          return [...base, "-showcerts", "-verify_return_error"];
+        case "tls10":
+          return [...base, "-tls1", "-brief"];
+        case "tls11":
+          return [...base, "-tls1_1", "-brief"];
+        case "tls12":
+          return [...base, "-tls1_2", "-brief"];
+        case "tls13":
+          return [...base, "-tls1_3", "-brief"];
+        case "cipher": {
+          if (!f.cipher) throw new Error("cipher 模式需要填写加密套件");
+          // -cipher 只在 <=TLS1.2 生效，强制 tls1_2 保证测得准
+          return [...base, "-tls1_2", "-cipher", f.cipher, "-brief"];
+        }
+        case "brief":
+        default:
+          return [...base, "-verify_return_error", "-brief"];
+      }
     },
   },
   {
