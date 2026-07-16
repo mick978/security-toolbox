@@ -5,10 +5,11 @@ import { useSearchParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import * as Icons from "lucide-react";
 import { tools, categories, type CategorySlug, type Difficulty, type Platform } from "@/lib/tools";
+import { executorBySlug } from "@/lib/executors";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
-import { Search, X } from "lucide-react";
+import { Search, X, Zap } from "lucide-react";
 
 export default function ToolsClient() {
   const params = useSearchParams();
@@ -108,6 +109,7 @@ export default function ToolsClient() {
           {filtered.map((t) => {
             const catObj = categories.find((c) => c.slug === t.category)!;
             const Icon = (Icons as any)[catObj.icon] ?? Icons.Circle;
+            const runnable = !!executorBySlug(t.slug);
             return (
               <Link key={t.slug} href={`/tools/${t.slug}`} className="group">
                 <Card className="h-full transition-colors hover:border-primary/60">
@@ -117,7 +119,12 @@ export default function ToolsClient() {
                         <Icon className={cn("h-4 w-4", catObj.accent)} />
                         <code className="font-mono text-primary text-sm">{t.name}</code>
                       </div>
-                      <div className="flex gap-1">
+                      <div className="flex gap-1 items-center">
+                        {runnable && (
+                          <span className="inline-flex items-center gap-0.5 rounded-full border border-yellow-500/40 bg-yellow-400/15 px-1.5 py-0.5 text-[10px] font-medium text-yellow-300">
+                            <Zap className="h-2.5 w-2.5" /> 在线执行
+                          </span>
+                        )}
                         {t.builtin && <Badge>内置</Badge>}
                         <Badge>{t.difficulty}</Badge>
                       </div>

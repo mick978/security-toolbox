@@ -1,6 +1,7 @@
 import Link from "next/link";
 import * as Icons from "lucide-react";
 import { categories, tools } from "@/lib/tools";
+import { executorBySlug, EXECUTOR_SLUGS } from "@/lib/executors";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { ArrowRight, Terminal, Zap, Shield, ScanLine } from "lucide-react";
@@ -13,7 +14,7 @@ export default function HomePage() {
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_20%,hsl(var(--primary)/0.15),transparent_50%),radial-gradient(circle_at_80%_60%,hsl(var(--primary)/0.08),transparent_50%)]" />
         <div className="container relative py-20 lg:py-28">
           <Badge className="mb-5 border-primary/40 text-primary bg-primary/10">
-            v0.1 · {tools.length} 工具 · {categories.length} 分类
+            v0.1 · {tools.length} 工具 · {categories.length} 分类 · <Zap className="inline h-3 w-3 mx-0.5" />{EXECUTOR_SLUGS.length} 支持网页执行
           </Badge>
           <h1 className="text-4xl md:text-6xl font-bold tracking-tight max-w-4xl">
             网络安全排查工具速查手册
@@ -96,12 +97,18 @@ export default function HomePage() {
           {["dig", "nmap", "curl", "tcpdump", "nuclei", "trivy"].map((slug) => {
             const t = tools.find((x) => x.slug === slug);
             if (!t) return null;
+            const runnable = !!executorBySlug(t.slug);
             return (
               <Link key={t.slug} href={`/tools/${t.slug}`} className="group">
                 <Card className="h-full transition-colors hover:border-primary/60">
                   <CardHeader>
                     <div className="flex items-center gap-2">
                       <code className="text-primary font-mono text-sm">{t.name}</code>
+                      {runnable && (
+                        <span className="inline-flex items-center gap-0.5 rounded-full border border-yellow-500/40 bg-yellow-400/15 px-1.5 py-0.5 text-[10px] font-medium text-yellow-300">
+                          <Zap className="h-2.5 w-2.5" /> 在线执行
+                        </span>
+                      )}
                       <Badge className="ml-auto">{t.category}</Badge>
                     </div>
                     <CardDescription className="mt-2">{t.tagline}</CardDescription>
