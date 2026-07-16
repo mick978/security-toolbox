@@ -1,0 +1,995 @@
+export type Platform = "linux" | "macos" | "windows" | "web";
+export type Difficulty = "easy" | "medium" | "hard";
+
+export interface ToolExample {
+  label: string;
+  cmd: string;
+  note?: string;
+}
+
+export interface Tool {
+  slug: string;
+  name: string;
+  category: CategorySlug;
+  tagline: string;
+  description: string;
+  tags: string[];
+  platforms: Platform[];
+  difficulty: Difficulty;
+  install?: { manager: string; cmd: string }[];
+  examples: ToolExample[];
+  docs?: string;
+  homepage?: string;
+  builtin?: boolean; // 系统内置
+}
+
+export type CategorySlug =
+  | "dns"
+  | "connectivity"
+  | "ports"
+  | "http-tls"
+  | "capture"
+  | "vulnscan"
+  | "logs"
+  | "online";
+
+export interface Category {
+  slug: CategorySlug;
+  name: string;
+  short: string;
+  description: string;
+  icon: string; // lucide-react name
+  accent: string; // tailwind color class
+}
+
+export const categories: Category[] = [
+  {
+    slug: "dns",
+    name: "DNS 与域名",
+    short: "解析·反查·证书透明",
+    description: "解析记录查询、反向解析、Whois 与证书透明日志检索。",
+    icon: "Globe",
+    accent: "text-emerald-400",
+  },
+  {
+    slug: "connectivity",
+    name: "连通性与路由",
+    short: "Ping·路径·抖动",
+    description: "端到端连通、路径追踪、丢包与抖动定位。",
+    icon: "Radio",
+    accent: "text-sky-400",
+  },
+  {
+    slug: "ports",
+    name: "端口与服务",
+    short: "扫描·指纹·探活",
+    description: "TCP/UDP 端口扫描、服务指纹识别、批量探活。",
+    icon: "ScanLine",
+    accent: "text-violet-400",
+  },
+  {
+    slug: "http-tls",
+    name: "HTTP / TLS",
+    short: "接口·证书·加密套件",
+    description: "接口请求、证书链、TLS 握手、Header 安全评估。",
+    icon: "Lock",
+    accent: "text-amber-400",
+  },
+  {
+    slug: "capture",
+    name: "抓包与流量分析",
+    short: "抓包·解码·中间人",
+    description: "网卡抓包、协议解码、HTTPS 中间人调试。",
+    icon: "Waves",
+    accent: "text-cyan-400",
+  },
+  {
+    slug: "vulnscan",
+    name: "漏洞与合规扫描",
+    short: "CVE·模板·容器",
+    description: "Web 与主机漏洞扫描、容器与镜像合规扫描。",
+    icon: "ShieldAlert",
+    accent: "text-rose-400",
+  },
+  {
+    slug: "logs",
+    name: "日志与取证",
+    short: "过滤·聚合·可视化",
+    description: "海量日志过滤、JSON 处理、访问日志可视化。",
+    icon: "FileSearch",
+    accent: "text-fuchsia-400",
+  },
+  {
+    slug: "online",
+    name: "在线快检",
+    short: "免安装·一键查",
+    description: "无需安装的第三方在线检查平台。",
+    icon: "ExternalLink",
+    accent: "text-lime-400",
+  },
+];
+
+export const tools: Tool[] = [
+  // ─────────────────────── DNS ───────────────────────
+  {
+    slug: "dig",
+    name: "dig",
+    category: "dns",
+    tagline: "DNS 解析瑞士军刀",
+    description: "BIND 提供的 DNS 查询工具，支持所有记录类型、trace 递归、TCP/UDP 与自定义解析器。排查解析问题的默认选择。",
+    tags: ["dns", "解析", "cname", "trace"],
+    platforms: ["linux", "macos"],
+    difficulty: "easy",
+    builtin: true,
+    install: [
+      { manager: "macOS 自带", cmd: "已内置 (bind-tools)" },
+      { manager: "apt", cmd: "sudo apt install dnsutils" },
+      { manager: "brew", cmd: "brew install bind" },
+    ],
+    examples: [
+      { label: "查 A 记录", cmd: "dig example.com A +short" },
+      { label: "指定 DNS 服务器", cmd: "dig @8.8.8.8 example.com" },
+      { label: "跟踪递归链", cmd: "dig example.com +trace", note: "从根 → TLD → 权威 一路显示" },
+      { label: "反向解析", cmd: "dig -x 1.1.1.1 +short" },
+      { label: "查所有类型", cmd: "dig example.com ANY" },
+    ],
+    docs: "https://bind9.readthedocs.io/",
+  },
+  {
+    slug: "nslookup",
+    name: "nslookup",
+    category: "dns",
+    tagline: "跨平台 DNS 探测",
+    description: "跨平台经典 DNS 查询工具，Windows / macOS / Linux 皆内置。语法简洁，适合快速验证。",
+    tags: ["dns", "跨平台"],
+    platforms: ["linux", "macos", "windows"],
+    difficulty: "easy",
+    builtin: true,
+    examples: [
+      { label: "基础查询", cmd: "nslookup example.com" },
+      { label: "指定 DNS", cmd: "nslookup example.com 1.1.1.1" },
+      { label: "查 MX", cmd: "nslookup -type=MX example.com" },
+    ],
+  },
+  {
+    slug: "host",
+    name: "host",
+    category: "dns",
+    tagline: "极简 DNS 查询",
+    description: "输出比 dig 更简洁，一行结果，脚本管道友好。",
+    tags: ["dns", "简洁"],
+    platforms: ["linux", "macos"],
+    difficulty: "easy",
+    examples: [
+      { label: "查询所有记录", cmd: "host example.com" },
+      { label: "反查", cmd: "host 1.1.1.1" },
+    ],
+  },
+  {
+    slug: "whois",
+    name: "whois",
+    category: "dns",
+    tagline: "域名与 IP 归属信息",
+    description: "查询域名注册信息、IP 归属 ASN、注册商与到期时间。",
+    tags: ["域名", "asn", "归属"],
+    platforms: ["linux", "macos", "windows"],
+    difficulty: "easy",
+    install: [
+      { manager: "brew", cmd: "brew install whois" },
+      { manager: "apt", cmd: "sudo apt install whois" },
+    ],
+    examples: [
+      { label: "查域名", cmd: "whois example.com" },
+      { label: "查 IP 归属", cmd: "whois 8.8.8.8 | head -30" },
+    ],
+  },
+  {
+    slug: "dnsx",
+    name: "dnsx",
+    category: "dns",
+    tagline: "并发 DNS 探测（ProjectDiscovery）",
+    description: "Go 编写的高并发 DNS 工具，支持批量、通配符检测、CNAME 链、DNS 服务器压测。",
+    tags: ["批量", "并发", "go"],
+    platforms: ["linux", "macos", "windows"],
+    difficulty: "medium",
+    install: [
+      { manager: "go", cmd: "go install github.com/projectdiscovery/dnsx/cmd/dnsx@latest" },
+      { manager: "brew", cmd: "brew install dnsx" },
+    ],
+    examples: [
+      { label: "批量解析", cmd: "cat domains.txt | dnsx -a -resp" },
+      { label: "过 CNAME", cmd: "cat sub.txt | dnsx -cname -resp" },
+    ],
+    homepage: "https://github.com/projectdiscovery/dnsx",
+  },
+
+  // ────────────────── connectivity ──────────────────
+  {
+    slug: "ping",
+    name: "ping",
+    category: "connectivity",
+    tagline: "ICMP 端到端连通",
+    description: "最基础的连通性测试。丢包率、RTT 一眼看出。注意 ICMP 可能被防火墙丢弃。",
+    tags: ["icmp", "rtt", "丢包"],
+    platforms: ["linux", "macos", "windows"],
+    difficulty: "easy",
+    builtin: true,
+    examples: [
+      { label: "标准", cmd: "ping example.com" },
+      { label: "限次数", cmd: "ping -c 10 example.com" },
+      { label: "指定源 IP", cmd: "ping -S 192.168.1.10 8.8.8.8" },
+    ],
+  },
+  {
+    slug: "traceroute",
+    name: "traceroute",
+    category: "connectivity",
+    tagline: "跳跃路径追踪",
+    description: "追踪数据包从本机到目标的路由路径，判定断点所在跳。macOS 内置。",
+    tags: ["路由", "trace", "hops"],
+    platforms: ["linux", "macos"],
+    difficulty: "easy",
+    builtin: true,
+    examples: [
+      { label: "UDP（默认）", cmd: "traceroute example.com" },
+      { label: "ICMP 探测", cmd: "sudo traceroute -I example.com" },
+      { label: "指定端口", cmd: "traceroute -T -p 443 example.com" },
+    ],
+  },
+  {
+    slug: "mtr",
+    name: "mtr",
+    category: "connectivity",
+    tagline: "实时路径抖动图",
+    description: "ping + traceroute 融合体。每跳持续采样丢包率与 RTT，适合定位间歇性网络问题。",
+    tags: ["丢包", "抖动", "路径"],
+    platforms: ["linux", "macos"],
+    difficulty: "easy",
+    install: [
+      { manager: "brew", cmd: "brew install mtr" },
+      { manager: "apt", cmd: "sudo apt install mtr" },
+    ],
+    examples: [
+      { label: "交互模式", cmd: "sudo mtr example.com" },
+      { label: "报告模式（100 次退出）", cmd: "sudo mtr -rw -c 100 example.com" },
+      { label: "TCP 443 探测", cmd: "sudo mtr -T -P 443 example.com" },
+    ],
+  },
+  {
+    slug: "tcping",
+    name: "tcping",
+    category: "connectivity",
+    tagline: "TCP 层 ping",
+    description: "ICMP 被封时的替代方案，直接探测 TCP 端口是否可达并测量握手耗时。",
+    tags: ["tcp", "端口存活"],
+    platforms: ["linux", "macos", "windows"],
+    difficulty: "easy",
+    install: [
+      { manager: "go", cmd: "go install github.com/cloverstd/tcping@latest" },
+      { manager: "brew", cmd: "brew install tcping" },
+    ],
+    examples: [
+      { label: "TCP 443 存活", cmd: "tcping example.com 443" },
+      { label: "持续", cmd: "tcping -c 20 example.com 443" },
+    ],
+  },
+  {
+    slug: "iperf3",
+    name: "iperf3",
+    category: "connectivity",
+    tagline: "端到端带宽压测",
+    description: "客户端-服务端模型压测吞吐、抖动、丢包。诊断骨干链路瓶颈的标准工具。",
+    tags: ["带宽", "吞吐", "压测"],
+    platforms: ["linux", "macos", "windows"],
+    difficulty: "medium",
+    install: [
+      { manager: "brew", cmd: "brew install iperf3" },
+      { manager: "apt", cmd: "sudo apt install iperf3" },
+    ],
+    examples: [
+      { label: "服务端", cmd: "iperf3 -s" },
+      { label: "客户端", cmd: "iperf3 -c server.example.com -t 30" },
+      { label: "UDP 100M", cmd: "iperf3 -c server.example.com -u -b 100M" },
+    ],
+  },
+
+  // ─────────────────────── ports ───────────────────────
+  {
+    slug: "nmap",
+    name: "nmap",
+    category: "ports",
+    tagline: "端口扫描之王",
+    description: "TCP/UDP 端口扫描 + 服务指纹 + 脚本引擎 (NSE) 一体。合规扫描前请先取得授权。",
+    tags: ["扫描", "指纹", "nse"],
+    platforms: ["linux", "macos", "windows"],
+    difficulty: "medium",
+    install: [
+      { manager: "brew", cmd: "brew install nmap" },
+      { manager: "apt", cmd: "sudo apt install nmap" },
+    ],
+    examples: [
+      { label: "常用 1000 端口", cmd: "nmap -T4 example.com" },
+      { label: "服务/版本探测", cmd: "sudo nmap -sV -sC -Pn -p- example.com" },
+      { label: "UDP TOP 100", cmd: "sudo nmap -sU --top-ports 100 example.com" },
+      { label: "内网存活主机", cmd: "sudo nmap -sn 192.168.1.0/24" },
+      { label: "HTTP 弱点脚本", cmd: "nmap --script http-vuln* -p 80,443 target" },
+    ],
+    homepage: "https://nmap.org/",
+  },
+  {
+    slug: "masscan",
+    name: "masscan",
+    category: "ports",
+    tagline: "全网速扫（百万 pps）",
+    description: "自实现 TCP/IP 栈，可在几分钟扫完整个 IPv4。速度快但精度较 nmap 略低，常配合 nmap 二次确认。",
+    tags: ["快速", "大规模"],
+    platforms: ["linux"],
+    difficulty: "hard",
+    install: [{ manager: "apt", cmd: "sudo apt install masscan" }],
+    examples: [
+      { label: "扫段 top 端口", cmd: "sudo masscan 10.0.0.0/8 -p80,443 --rate=10000" },
+      { label: "输出 JSON", cmd: "sudo masscan 10.0.0.0/24 -p1-65535 --rate=5000 -oJ out.json" },
+    ],
+  },
+  {
+    slug: "naabu",
+    name: "naabu",
+    category: "ports",
+    tagline: "SYN 快速端口扫描",
+    description: "ProjectDiscovery 出品，Go 编写，SYN scan 快速探活，适合与其他 pdtoolset 管道组合。",
+    tags: ["syn", "快速", "go"],
+    platforms: ["linux", "macos"],
+    difficulty: "medium",
+    install: [
+      { manager: "go", cmd: "go install github.com/projectdiscovery/naabu/v2/cmd/naabu@latest" },
+      { manager: "brew", cmd: "brew install naabu" },
+    ],
+    examples: [
+      { label: "top 1000", cmd: "sudo naabu -host example.com -top-ports 1000" },
+      { label: "批量", cmd: "sudo naabu -list hosts.txt -o open.txt" },
+    ],
+    homepage: "https://github.com/projectdiscovery/naabu",
+  },
+  {
+    slug: "netcat",
+    name: "netcat (nc)",
+    category: "ports",
+    tagline: "TCP/UDP 瑞士军刀",
+    description: "手动敲协议、临时监听、文件传输、反向 shell 皆可。debug 神器。",
+    tags: ["tcp", "udp", "监听"],
+    platforms: ["linux", "macos"],
+    difficulty: "easy",
+    builtin: true,
+    examples: [
+      { label: "端口探测", cmd: "nc -zv example.com 22 80 443" },
+      { label: "监听 8080", cmd: "nc -l 8080" },
+      { label: "文件传输 (接收)", cmd: "nc -l 9000 > recv.bin" },
+      { label: "文件传输 (发送)", cmd: "nc host 9000 < file.bin" },
+    ],
+  },
+  {
+    slug: "rustscan",
+    name: "rustscan",
+    category: "ports",
+    tagline: "Rust 加速端口扫描",
+    description: "先用 Rust 快扫定位开放端口，再自动喂给 nmap 做指纹。适合内网快速摸底。",
+    tags: ["rust", "快速"],
+    platforms: ["linux", "macos", "windows"],
+    difficulty: "medium",
+    install: [{ manager: "brew", cmd: "brew install rustscan" }],
+    examples: [{ label: "扫 + nmap 深探", cmd: "rustscan -a example.com -- -sV -sC" }],
+  },
+
+  // ─────────────────── http-tls ───────────────────
+  {
+    slug: "curl",
+    name: "curl",
+    category: "http-tls",
+    tagline: "HTTP/HTTPS/多协议客户端",
+    description: "调 API、看 header、下证书链、复现 CDN 问题。加 -v 是排错第一步。",
+    tags: ["http", "api", "tls"],
+    platforms: ["linux", "macos", "windows"],
+    difficulty: "easy",
+    builtin: true,
+    examples: [
+      { label: "看 Header", cmd: "curl -I https://example.com" },
+      { label: "详细握手", cmd: "curl -vso /dev/null https://example.com 2>&1 | head -40" },
+      { label: "强指定 IP（绕 DNS）", cmd: "curl --resolve example.com:443:1.2.3.4 https://example.com" },
+      { label: "禁用 KeepAlive 计时", cmd: "curl -o /dev/null -s -w 'dns:%{time_namelookup}s tcp:%{time_connect}s tls:%{time_appconnect}s ttfb:%{time_starttransfer}s total:%{time_total}s\\n' https://example.com" },
+      { label: "POST JSON", cmd: "curl -X POST -H 'Content-Type: application/json' -d '{\"k\":\"v\"}' https://api.example.com/x" },
+    ],
+  },
+  {
+    slug: "httpie",
+    name: "HTTPie",
+    category: "http-tls",
+    tagline: "人类友好的 curl",
+    description: "彩色高亮、JSON 优先、语法简单。日常调 API 更舒服。",
+    tags: ["http", "api", "cli"],
+    platforms: ["linux", "macos", "windows"],
+    difficulty: "easy",
+    install: [
+      { manager: "brew", cmd: "brew install httpie" },
+      { manager: "pip", cmd: "pip install httpie" },
+    ],
+    examples: [
+      { label: "GET", cmd: "http https://api.example.com/users" },
+      { label: "POST JSON", cmd: "http POST api.example.com/x k=v" },
+      { label: "Header + 认证", cmd: "http -A bearer -a $TOKEN api.example.com/me" },
+    ],
+  },
+  {
+    slug: "testssl",
+    name: "testssl.sh",
+    category: "http-tls",
+    tagline: "TLS 配置全面体检",
+    description: "命令行版 SSL Labs，覆盖协议版本、加密套件、Heartbleed、证书链、HSTS 全部指标。",
+    tags: ["tls", "证书", "合规"],
+    platforms: ["linux", "macos"],
+    difficulty: "medium",
+    install: [
+      { manager: "brew", cmd: "brew install testssl" },
+      { manager: "git", cmd: "git clone https://github.com/drwetter/testssl.sh" },
+    ],
+    examples: [
+      { label: "全项体检", cmd: "testssl.sh https://example.com" },
+      { label: "只查协议 & 套件", cmd: "testssl.sh -p -E example.com:443" },
+      { label: "并行批量", cmd: "testssl.sh --file targets.txt --parallel" },
+    ],
+    homepage: "https://testssl.sh",
+  },
+  {
+    slug: "openssl-sclient",
+    name: "openssl s_client",
+    category: "http-tls",
+    tagline: "手工 TLS 握手 & 证书",
+    description: "查证书链、SNI 匹配、协议版本、支持的 ALPN。openssl 通用内置。",
+    tags: ["tls", "证书"],
+    platforms: ["linux", "macos", "windows"],
+    difficulty: "medium",
+    builtin: true,
+    examples: [
+      { label: "证书链", cmd: "openssl s_client -connect example.com:443 -servername example.com -showcerts </dev/null" },
+      { label: "只握手 TLS1.3", cmd: "openssl s_client -connect example.com:443 -tls1_3 -brief </dev/null" },
+      { label: "证书到期日", cmd: "echo | openssl s_client -connect example.com:443 -servername example.com 2>/dev/null | openssl x509 -noout -dates" },
+    ],
+  },
+  {
+    slug: "httpx",
+    name: "httpx",
+    category: "http-tls",
+    tagline: "批量 HTTP 探针",
+    description: "ProjectDiscovery httpx，多线程探测 http 存活、状态码、标题、指纹。适合资产梳理。",
+    tags: ["批量", "存活", "指纹"],
+    platforms: ["linux", "macos", "windows"],
+    difficulty: "medium",
+    install: [
+      { manager: "go", cmd: "go install github.com/projectdiscovery/httpx/cmd/httpx@latest" },
+      { manager: "brew", cmd: "brew install httpx" },
+    ],
+    examples: [
+      { label: "存活 + 标题", cmd: "cat hosts.txt | httpx -title -status-code -tech-detect" },
+      { label: "只留 200", cmd: "cat hosts.txt | httpx -mc 200 -silent" },
+    ],
+    homepage: "https://github.com/projectdiscovery/httpx",
+  },
+
+  // ─────────────────── capture ───────────────────
+  {
+    slug: "tcpdump",
+    name: "tcpdump",
+    category: "capture",
+    tagline: "命令行抓包",
+    description: "libpcap 官方前端。生产上抓 pcap 送 wireshark 分析的标准做法。",
+    tags: ["抓包", "pcap"],
+    platforms: ["linux", "macos"],
+    difficulty: "medium",
+    builtin: true,
+    examples: [
+      { label: "抓 http", cmd: "sudo tcpdump -i any -nn -s0 'tcp port 80' -w http.pcap" },
+      { label: "抓特定主机", cmd: "sudo tcpdump -i any host 1.2.3.4 -c 100" },
+      { label: "DNS 请求", cmd: "sudo tcpdump -i any -nn 'udp port 53'" },
+    ],
+  },
+  {
+    slug: "wireshark",
+    name: "Wireshark",
+    category: "capture",
+    tagline: "GUI 抓包分析",
+    description: "上千种协议解码器 + 图形化时间轴。分析 pcap 的第一选择。",
+    tags: ["gui", "pcap", "解码"],
+    platforms: ["linux", "macos", "windows"],
+    difficulty: "medium",
+    install: [
+      { manager: "brew", cmd: "brew install --cask wireshark" },
+      { manager: "官网", cmd: "https://www.wireshark.org/#download" },
+    ],
+    examples: [
+      { label: "过滤 HTTP", cmd: "显示过滤器: http.request or http.response" },
+      { label: "TLS 握手错误", cmd: "显示过滤器: tls.alert_message" },
+    ],
+    homepage: "https://www.wireshark.org",
+  },
+  {
+    slug: "tshark",
+    name: "tshark",
+    category: "capture",
+    tagline: "Wireshark 的 CLI 兄弟",
+    description: "Wireshark 引擎的命令行版本，pcap 批处理与自动化分析首选。",
+    tags: ["cli", "pcap"],
+    platforms: ["linux", "macos"],
+    difficulty: "medium",
+    install: [{ manager: "brew", cmd: "brew install wireshark" }],
+    examples: [
+      { label: "读 pcap 只出 HTTP host", cmd: "tshark -r cap.pcap -Y http -T fields -e http.host" },
+      { label: "TLS SNI 统计", cmd: "tshark -r cap.pcap -Y 'tls.handshake.extensions_server_name' -T fields -e tls.handshake.extensions_server_name | sort | uniq -c" },
+    ],
+  },
+  {
+    slug: "mitmproxy",
+    name: "mitmproxy",
+    category: "capture",
+    tagline: "HTTPS 中间人调试",
+    description: "拦截、重放、改包、写 Python 脚本 hook 请求。移动端调试与 API 逆向常用。",
+    tags: ["https", "调试", "脚本"],
+    platforms: ["linux", "macos", "windows"],
+    difficulty: "medium",
+    install: [
+      { manager: "brew", cmd: "brew install mitmproxy" },
+      { manager: "pip", cmd: "pip install mitmproxy" },
+    ],
+    examples: [
+      { label: "启动 TUI", cmd: "mitmproxy" },
+      { label: "Web UI", cmd: "mitmweb --listen-port 8080" },
+      { label: "跑脚本", cmd: "mitmdump -s modify.py" },
+    ],
+    homepage: "https://mitmproxy.org",
+  },
+
+  // ─────────────────── vulnscan ───────────────────
+  {
+    slug: "nuclei",
+    name: "nuclei",
+    category: "vulnscan",
+    tagline: "模板化漏洞扫描",
+    description: "YAML 模板驱动，社区几千条 CVE/misconfig 检查。速度快、误报可控，扫描前请确保授权。",
+    tags: ["cve", "模板", "yaml"],
+    platforms: ["linux", "macos", "windows"],
+    difficulty: "medium",
+    install: [
+      { manager: "go", cmd: "go install github.com/projectdiscovery/nuclei/v3/cmd/nuclei@latest" },
+      { manager: "brew", cmd: "brew install nuclei" },
+    ],
+    examples: [
+      { label: "扫单目标", cmd: "nuclei -u https://example.com" },
+      { label: "高危模板", cmd: "nuclei -u https://example.com -severity critical,high" },
+      { label: "更新模板", cmd: "nuclei -update-templates" },
+    ],
+    homepage: "https://github.com/projectdiscovery/nuclei",
+  },
+  {
+    slug: "nikto",
+    name: "nikto",
+    category: "vulnscan",
+    tagline: "经典 Web 服务器扫描",
+    description: "老牌 Web 漏扫，检查过期组件、危险文件、默认凭据。适合入门与快速摸底。",
+    tags: ["web", "cgi", "配置"],
+    platforms: ["linux", "macos"],
+    difficulty: "easy",
+    install: [{ manager: "brew", cmd: "brew install nikto" }],
+    examples: [
+      { label: "标准扫描", cmd: "nikto -h https://example.com" },
+      { label: "禁 SSL 校验", cmd: "nikto -h https://example.com -ssl -nointeractive" },
+    ],
+  },
+  {
+    slug: "trivy",
+    name: "trivy",
+    category: "vulnscan",
+    tagline: "容器·IaC·仓库全能扫",
+    description: "Aqua 出品，扫容器镜像、文件系统、Git 仓库、K8s 与 IaC 中的 CVE + 秘钥泄漏。",
+    tags: ["容器", "iac", "cve", "secret"],
+    platforms: ["linux", "macos", "windows"],
+    difficulty: "easy",
+    install: [{ manager: "brew", cmd: "brew install trivy" }],
+    examples: [
+      { label: "扫镜像", cmd: "trivy image alpine:3.18" },
+      { label: "扫仓库", cmd: "trivy repo https://github.com/knqyf263/vuln-repo" },
+      { label: "扫本地 fs + secret", cmd: "trivy fs --scanners vuln,secret,config ." },
+    ],
+    homepage: "https://trivy.dev",
+  },
+  {
+    slug: "grype",
+    name: "grype",
+    category: "vulnscan",
+    tagline: "SBOM 驱动漏洞扫描",
+    description: "Anchore 出品，配合 syft 生成 SBOM 后扫描，与 CI 管道集成简单。",
+    tags: ["sbom", "cve", "supply-chain"],
+    platforms: ["linux", "macos"],
+    difficulty: "medium",
+    install: [{ manager: "brew", cmd: "brew install grype" }],
+    examples: [
+      { label: "扫镜像", cmd: "grype alpine:latest" },
+      { label: "只出高危", cmd: "grype alpine:latest --fail-on high" },
+    ],
+  },
+  {
+    slug: "sqlmap",
+    name: "sqlmap",
+    category: "vulnscan",
+    tagline: "SQL 注入自动化",
+    description: "自动化 SQL 注入检测与利用工具。请仅对拥有授权的目标使用。",
+    tags: ["sqli", "web"],
+    platforms: ["linux", "macos", "windows"],
+    difficulty: "hard",
+    install: [{ manager: "brew", cmd: "brew install sqlmap" }],
+    examples: [
+      { label: "GET 参数", cmd: "sqlmap -u 'https://example.com/x?id=1' --batch" },
+      { label: "从 request 文件", cmd: "sqlmap -r req.txt --level 3 --risk 2" },
+    ],
+  },
+
+  // ─────────────────── logs ───────────────────
+  {
+    slug: "ripgrep",
+    name: "ripgrep (rg)",
+    category: "logs",
+    tagline: "极速正则搜索",
+    description: "Rust 写的 grep 替代品，速度是 grep 的数十倍，默认支持 gitignore。",
+    tags: ["grep", "rust", "正则"],
+    platforms: ["linux", "macos", "windows"],
+    difficulty: "easy",
+    install: [{ manager: "brew", cmd: "brew install ripgrep" }],
+    examples: [
+      { label: "递归搜", cmd: "rg 'ERROR' /var/log" },
+      { label: "多模式", cmd: "rg -e '500 ' -e '502 ' access.log" },
+      { label: "只出文件名", cmd: "rg -l 'panic' ." },
+    ],
+  },
+  {
+    slug: "jq",
+    name: "jq",
+    category: "logs",
+    tagline: "JSON 命令行处理器",
+    description: "结构化日志（如 nginx json log、K8s audit）离不开它。管道友好、语法接近 SQL。",
+    tags: ["json", "过滤", "转换"],
+    platforms: ["linux", "macos", "windows"],
+    difficulty: "medium",
+    install: [{ manager: "brew", cmd: "brew install jq" }],
+    examples: [
+      { label: "取字段", cmd: "cat log.json | jq '.request.uri'" },
+      { label: "按状态码统计", cmd: "cat access.json | jq -r '.status' | sort | uniq -c" },
+      { label: "过滤", cmd: "jq 'select(.duration > 1000)' log.json" },
+    ],
+  },
+  {
+    slug: "goaccess",
+    name: "GoAccess",
+    category: "logs",
+    tagline: "实时终端 / HTML 访问日志",
+    description: "解析 nginx/apache 访问日志，实时生成终端仪表盘或漂亮的 HTML 报表。",
+    tags: ["nginx", "报表", "实时"],
+    platforms: ["linux", "macos"],
+    difficulty: "easy",
+    install: [{ manager: "brew", cmd: "brew install goaccess" }],
+    examples: [
+      { label: "终端仪表盘", cmd: "goaccess /var/log/nginx/access.log --log-format=COMBINED" },
+      { label: "生成 HTML", cmd: "goaccess access.log --log-format=COMBINED -o report.html" },
+    ],
+  },
+  {
+    slug: "journalctl",
+    name: "journalctl",
+    category: "logs",
+    tagline: "systemd 日志检索",
+    description: "查 systemd 服务日志的官方入口。按单元、时间、优先级过滤。",
+    tags: ["systemd", "linux"],
+    platforms: ["linux"],
+    difficulty: "easy",
+    builtin: true,
+    examples: [
+      { label: "看 nginx", cmd: "journalctl -u nginx -f" },
+      { label: "今天报错以上", cmd: "journalctl --since today -p err" },
+      { label: "内核日志", cmd: "journalctl -k -f" },
+    ],
+  },
+  {
+    slug: "lnav",
+    name: "lnav",
+    category: "logs",
+    tagline: "多格式日志 TUI",
+    description: "自动识别十几种日志格式（nginx/syslog/log4j…）在终端提供高亮、时间对齐、SQL 查询。",
+    tags: ["tui", "多格式"],
+    platforms: ["linux", "macos"],
+    difficulty: "medium",
+    install: [{ manager: "brew", cmd: "brew install lnav" }],
+    examples: [{ label: "打开一批日志", cmd: "lnav /var/log/nginx/*.log" }],
+  },
+
+  // ─────────────────── online ───────────────────
+  {
+    slug: "ssllabs",
+    name: "SSL Labs",
+    category: "online",
+    tagline: "TLS 评分与合规",
+    description: "Qualys SSL Labs，一键给出 A+~F 评级、证书链、协议、套件、漏洞、HSTS。",
+    tags: ["tls", "评级"],
+    platforms: ["web"],
+    difficulty: "easy",
+    homepage: "https://www.ssllabs.com/ssltest/",
+    examples: [{ label: "打开检查", cmd: "https://www.ssllabs.com/ssltest/analyze.html?d=example.com&hideResults=on" }],
+  },
+  {
+    slug: "securityheaders",
+    name: "SecurityHeaders",
+    category: "online",
+    tagline: "HTTP Header 安全评分",
+    description: "扫描 CSP、HSTS、X-Frame-Options 等安全响应头，出评分与整改建议。",
+    tags: ["header", "csp", "hsts"],
+    platforms: ["web"],
+    difficulty: "easy",
+    homepage: "https://securityheaders.com",
+    examples: [{ label: "打开检查", cmd: "https://securityheaders.com/?q=https%3A%2F%2Fexample.com" }],
+  },
+  {
+    slug: "crt-sh",
+    name: "crt.sh",
+    category: "online",
+    tagline: "证书透明日志查子域",
+    description: "查询公开签发的证书，可用于枚举一个域名的子域名与历史证书。资产测绘常用。",
+    tags: ["ct", "子域", "证书"],
+    platforms: ["web"],
+    difficulty: "easy",
+    homepage: "https://crt.sh",
+    examples: [{ label: "查子域", cmd: "https://crt.sh/?q=%25.example.com" }],
+  },
+  {
+    slug: "shodan",
+    name: "Shodan",
+    category: "online",
+    tagline: "全网设备指纹搜索",
+    description: "被动扫描全网的开放端口与横幅，查暴露资产 / 摄像头 / ICS。API 需付费。",
+    tags: ["资产", "指纹", "被动"],
+    platforms: ["web"],
+    difficulty: "medium",
+    homepage: "https://www.shodan.io",
+    examples: [{ label: "查开放 Redis", cmd: "https://www.shodan.io/search?query=product%3ARedis" }],
+  },
+  {
+    slug: "ipinfo",
+    name: "ipinfo.io",
+    category: "online",
+    tagline: "IP 归属与 ASN",
+    description: "免费查 IP 所属 ASN、地理位置、组织。curl 直接调用返回 JSON。",
+    tags: ["ip", "asn", "geo"],
+    platforms: ["web"],
+    difficulty: "easy",
+    homepage: "https://ipinfo.io",
+    examples: [
+      { label: "查自己出口 IP", cmd: "curl ipinfo.io" },
+      { label: "查特定 IP", cmd: "curl ipinfo.io/1.1.1.1" },
+    ],
+  },
+
+  // ─────────────── 云安全 / K8s / 移动 / 内网横向 补充 ───────────────
+  {
+    slug: "frida",
+    name: "Frida",
+    category: "capture",
+    tagline: "动态插桩 / hook 抓包利器",
+    description: "跨平台动态插桩框架，运行时 hook Java / native / Objective-C 函数、绕过 SSL Pinning、抓函数参数与返回值。移动逆向与抓包必备。",
+    tags: ["frida", "hook", "android", "ios", "pinning"],
+    platforms: ["linux", "macos", "windows"],
+    difficulty: "hard",
+    install: [
+      { manager: "pip", cmd: "pip install frida-tools" },
+      { manager: "brew", cmd: "brew install frida" },
+    ],
+    homepage: "https://frida.re",
+    docs: "https://frida.re/docs/home/",
+    examples: [
+      { label: "看设备进程", cmd: "frida-ps -U" },
+      { label: "attach 目标 App", cmd: "frida -U -f com.target.app -l hook.js --no-pause" },
+      { label: "绕 SSL Pinning", cmd: "frida -U -f com.target.app -l multi-unpinner.js --no-pause" },
+    ],
+  },
+  {
+    slug: "objection",
+    name: "Objection",
+    category: "capture",
+    tagline: "免脚本 Frida 交互工具",
+    description: "在 Frida 之上封装的交互式移动应用探索工具，无需写脚本即可搜类、hook 方法、禁 SSL Pinning、patch APK。适合快速起手。",
+    tags: ["frida", "移动", "pinning", "patchapk"],
+    platforms: ["linux", "macos", "windows"],
+    difficulty: "medium",
+    install: [{ manager: "pip", cmd: "pip install objection" }],
+    homepage: "https://github.com/sensepost/objection",
+    examples: [
+      { label: "进交互", cmd: "objection -g com.target.app explore" },
+      { label: "关 SSL Pinning", cmd: "android sslpinning disable" },
+      { label: "patch APK 支持用户 CA", cmd: "objection patchapk -s target.apk" },
+    ],
+  },
+  {
+    slug: "jadx",
+    name: "jadx",
+    category: "vulnscan",
+    tagline: "Android APK 反编译",
+    description: "把 APK / DEX / JAR 反编成可读 Java 源码，支持 GUI 与命令行。找硬编 key、URL、加密逻辑必备。",
+    tags: ["android", "反编", "逆向", "apk"],
+    platforms: ["linux", "macos", "windows"],
+    difficulty: "medium",
+    install: [{ manager: "brew", cmd: "brew install jadx" }],
+    homepage: "https://github.com/skylot/jadx",
+    examples: [
+      { label: "命令行反编", cmd: "jadx target.apk -d out/" },
+      { label: "GUI", cmd: "jadx-gui target.apk" },
+      { label: "全局搜硬编", cmd: "jadx target.apk -d out/ && grep -rn 'AKIA\\|sk-' out/" },
+    ],
+  },
+  {
+    slug: "kubectl",
+    name: "kubectl",
+    category: "vulnscan",
+    tagline: "K8s 官方 CLI",
+    description: "Kubernetes 集群操作与排查主命令。get / describe / logs / exec / events / auth can-i 是排错四板斧。",
+    tags: ["k8s", "kubernetes", "cli"],
+    platforms: ["linux", "macos", "windows"],
+    difficulty: "medium",
+    install: [
+      { manager: "brew", cmd: "brew install kubectl" },
+      { manager: "curl", cmd: "curl -LO https://dl.k8s.io/release/$(curl -Ls https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl" },
+    ],
+    homepage: "https://kubernetes.io/docs/reference/kubectl/",
+    examples: [
+      { label: "看 Pod 事件", cmd: "kubectl get events -A --sort-by=.lastTimestamp | tail -30" },
+      { label: "查 SA 权限", cmd: "kubectl auth can-i --list --as=system:serviceaccount:default:default" },
+      { label: "扫特权 Pod", cmd: "kubectl get pod -A -o json | jq '.items[] | select(.spec.containers[].securityContext.privileged==true)'" },
+    ],
+  },
+  {
+    slug: "prowler",
+    name: "Prowler",
+    category: "vulnscan",
+    tagline: "AWS / Azure / GCP 合规扫",
+    description: "开源多云安全评估工具，300+ 检查项覆盖 CIS / NIST / PCI / HIPAA。扫 IAM 越权、S3 公开、CloudTrail 缺失等。",
+    tags: ["aws", "云安全", "合规", "cis"],
+    platforms: ["linux", "macos"],
+    difficulty: "medium",
+    install: [{ manager: "pip", cmd: "pip install prowler" }],
+    homepage: "https://github.com/prowler-cloud/prowler",
+    examples: [
+      { label: "AWS 全量扫", cmd: "prowler aws" },
+      { label: "只看 critical/high", cmd: "prowler aws --severity critical high" },
+      { label: "IAM 专项", cmd: "prowler aws --checks iam_*" },
+    ],
+  },
+  {
+    slug: "aws-cli",
+    name: "AWS CLI",
+    category: "vulnscan",
+    tagline: "AWS 官方 CLI（应急首选）",
+    description: "AWS 官方命令行。事件应急时用来锁 key、拉 CloudTrail、批量停实例、改 SG。带子命令超多，随手 `aws help` 补。",
+    tags: ["aws", "iam", "ec2", "s3", "cloudtrail"],
+    platforms: ["linux", "macos", "windows"],
+    difficulty: "medium",
+    install: [{ manager: "brew", cmd: "brew install awscli" }],
+    homepage: "https://aws.amazon.com/cli/",
+    examples: [
+      { label: "禁 AccessKey", cmd: "aws iam update-access-key --access-key-id AKIA... --status Inactive --user-name <u>" },
+      { label: "查 key 最近调用", cmd: "aws cloudtrail lookup-events --lookup-attributes AttributeKey=AccessKeyId,AttributeValue=AKIA..." },
+      { label: "全区列 running", cmd: "for r in $(aws ec2 describe-regions --query 'Regions[].RegionName' --output text); do aws ec2 describe-instances --region $r; done" },
+    ],
+  },
+  {
+    slug: "gitleaks",
+    name: "Gitleaks",
+    category: "vulnscan",
+    tagline: "Git 仓库 secret 扫描",
+    description: "扫 Git 历史里的 AKIA / sk- / token / 证书泄漏。CI 前置最常用。",
+    tags: ["gitleaks", "secret", "泄漏"],
+    platforms: ["linux", "macos", "windows"],
+    difficulty: "easy",
+    install: [{ manager: "brew", cmd: "brew install gitleaks" }],
+    homepage: "https://github.com/gitleaks/gitleaks",
+    examples: [
+      { label: "扫当前仓库全历史", cmd: "gitleaks detect --source . --log-opts='--all'" },
+      { label: "只扫工作区未提交", cmd: "gitleaks protect --staged" },
+    ],
+  },
+  {
+    slug: "bloodhound",
+    name: "BloodHound",
+    category: "vulnscan",
+    tagline: "AD 攻击路径可视化",
+    description: "AD 权限图数据库，SharpHound 采集 + Neo4j 存 + GUI 可视化。找 Domain Admin 最短路径的标配。仅用于授权评估。",
+    tags: ["ad", "windows", "kerberos", "内网"],
+    platforms: ["linux", "macos", "windows"],
+    difficulty: "hard",
+    install: [{ manager: "brew", cmd: "brew install --cask bloodhound" }],
+    homepage: "https://github.com/BloodHoundAD/BloodHound",
+    examples: [
+      { label: "采集（Windows 域内）", cmd: "SharpHound.exe -c All" },
+      { label: "起 GUI", cmd: "bloodhound" },
+    ],
+  },
+  {
+    slug: "impacket",
+    name: "Impacket",
+    category: "vulnscan",
+    tagline: "SMB / Kerberos 攻防工具集",
+    description: "Python 实现的 SMB / MSRPC / Kerberos 协议库 + 脚本集，包含 GetUserSPNs / GetNPUsers / ntlmrelayx / psexec 等。仅用于授权评估。",
+    tags: ["smb", "kerberos", "内网", "ntlm"],
+    platforms: ["linux", "macos"],
+    difficulty: "hard",
+    install: [{ manager: "pip", cmd: "pip install impacket" }],
+    homepage: "https://github.com/fortra/impacket",
+    examples: [
+      { label: "Kerberoast", cmd: "GetUserSPNs.py corp/user:pass -dc-ip 10.0.0.1 -request" },
+      { label: "AS-REP roast", cmd: "GetNPUsers.py corp/ -no-pass -usersfile users.txt -dc-ip 10.0.0.1" },
+      { label: "SMB relay", cmd: "ntlmrelayx.py -tf targets.txt -smb2support" },
+    ],
+  },
+  {
+    slug: "crackmapexec",
+    name: "CrackMapExec",
+    category: "vulnscan",
+    tagline: "内网 SMB / WinRM / LDAP 扫射",
+    description: "内网大范围凭据 / 服务 / 共享枚举利器，一条命令扫全段 SMB signing、共享、admin 权限。仅用于授权评估。",
+    tags: ["smb", "内网", "枚举"],
+    platforms: ["linux", "macos"],
+    difficulty: "hard",
+    install: [{ manager: "pip", cmd: "pipx install crackmapexec" }],
+    homepage: "https://github.com/Porchetta-Industries/CrackMapExec",
+    examples: [
+      { label: "全段测凭据", cmd: "crackmapexec smb 10.0.0.0/24 -u user -p pass" },
+      { label: "列没开 signing 的机器", cmd: "crackmapexec smb 10.0.0.0/24 --gen-relay-list relay.txt" },
+    ],
+  },
+  {
+    slug: "hashcat",
+    name: "hashcat",
+    category: "vulnscan",
+    tagline: "GPU 哈希爆破",
+    description: "最快的哈希爆破工具，支持 NTLM / Kerberos TGS / AS-REP / MD5 / bcrypt / SHA 等 300+ 模式。仅用于授权评估。",
+    tags: ["hash", "破解", "kerberos", "ntlm"],
+    platforms: ["linux", "macos", "windows"],
+    difficulty: "hard",
+    install: [{ manager: "brew", cmd: "brew install hashcat" }],
+    homepage: "https://hashcat.net/",
+    examples: [
+      { label: "Kerberoast TGS", cmd: "hashcat -m 13100 hashes.txt rockyou.txt" },
+      { label: "AS-REP", cmd: "hashcat -m 18200 asrep.txt rockyou.txt" },
+      { label: "NTLM", cmd: "hashcat -m 1000 ntlm.txt rockyou.txt --force" },
+    ],
+  },
+  {
+    slug: "fping",
+    name: "fping",
+    category: "connectivity",
+    tagline: "并发 ICMP 扫段",
+    description: "并发 ping 一整个网段，找存活主机比 ping 快 100 倍。内网 recon 起手工具。",
+    tags: ["ping", "扫段", "内网"],
+    platforms: ["linux", "macos"],
+    difficulty: "easy",
+    install: [{ manager: "brew", cmd: "brew install fping" }],
+    homepage: "https://fping.org/",
+    examples: [
+      { label: "扫存活", cmd: "fping -a -q -g 10.0.0.0/24 2>/dev/null" },
+      { label: "指定超时", cmd: "fping -a -q -t 300 -g 192.168.1.0/24" },
+    ],
+  },
+];
+
+// ─── indexes ───
+export function toolsBy(category: CategorySlug): Tool[] {
+  return tools.filter((t) => t.category === category);
+}
+export function toolBySlug(slug: string): Tool | undefined {
+  return tools.find((t) => t.slug === slug);
+}
+export function categoryBySlug(slug: string): Category | undefined {
+  return categories.find((c) => c.slug === slug);
+}
+export const allTags = Array.from(new Set(tools.flatMap((t) => t.tags))).sort();
