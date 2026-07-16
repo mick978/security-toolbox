@@ -64,9 +64,11 @@ export default async function CasePage({ params }: { params: Promise<{ slug: str
             </span>
             <h3 className="font-semibold mb-1.5 ml-2">{step.title}</h3>
             {step.desc && <p className="text-sm text-muted-foreground mb-2 ml-2">{step.desc}</p>}
-            <div className="ml-0">
-              <CodeBlock cmd={step.cmd} />
-            </div>
+            {step.cmd && (
+              <div className="ml-0">
+                <CodeBlock cmd={step.cmd} />
+              </div>
+            )}
             {step.tool && (
               <Link
                 href={`/tools/${step.tool}`}

@@ -2,6 +2,8 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import * as Icons from "lucide-react";
 import { toolBySlug, categoryBySlug, tools } from "@/lib/tools";
+import { executorBySlug } from "@/lib/executors";
+import { ToolRunner } from "@/components/tool-runner";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from "@/components/ui/card";
 import { CodeBlock } from "@/components/code-block";
@@ -25,6 +27,7 @@ export default async function ToolDetail({ params }: { params: Promise<{ slug: s
   const cat = categoryBySlug(tool.category)!;
   const CatIcon = (Icons as any)[cat.icon] ?? Icons.Circle;
   const dangerous = tool.category === "vulnscan" || tool.slug === "sqlmap" || tool.slug === "masscan";
+  const runner = executorBySlug(tool.slug);
 
   return (
     <div className="container py-10 max-w-4xl">
@@ -74,6 +77,17 @@ export default async function ToolDetail({ params }: { params: Promise<{ slug: s
           <Badge key={t}>#{t}</Badge>
         ))}
       </div>
+
+      {/* Web Executor —— 网页内直接跑 */}
+      {runner && (
+        <section className="mb-10">
+          <ToolRunner
+            slug={runner.slug}
+            description={runner.description}
+            argsTemplate={runner.argsTemplate}
+          />
+        </section>
+      )}
 
       {/* Install */}
       {tool.install && tool.install.length > 0 && (

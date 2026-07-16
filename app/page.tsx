@@ -20,9 +20,13 @@ export default function HomePage() {
             <span className="block text-primary mt-2">SecToolbox</span>
           </h1>
           <p className="mt-6 max-w-2xl text-lg text-muted-foreground">
-            面向 DevOps / SRE / 安全工程师。收录 DNS、端口扫描、抓包、TLS、漏洞扫描、日志分析常用工具的
+            面向 DevOps / SRE / 安全工程师 / 红蓝对抗。收录 DNS、扫描、抓包、TLS、漏扫、日志、
+            <span className="text-foreground font-medium">信息收集 / 漏洞利用 / C2 / 逆向 / 口令攻击</span>常用工具的
             <span className="text-foreground font-medium"> 安装命令、真实场景示例、一键复制</span>。
           </p>
+          <div className="mt-4 rounded-md border border-amber-500/40 bg-amber-500/10 px-4 py-2.5 text-xs text-amber-200 max-w-2xl">
+            ⚠️ 攻击性工具（信息收集 / 漏洞利用 / C2 / 口令攻击）<span className="font-medium">仅限用于授权渗透测试、CTF、自建靶场或学术研究</span>。禁止未授权使用。使用者需自行承担法律责任。
+          </div>
           <div className="mt-8 flex flex-wrap gap-3">
             <Link
               href="/tools"
