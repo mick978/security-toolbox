@@ -323,6 +323,32 @@ export const cheatsheets: Cheatsheet[] = [
       { title: "临时应急", cmd: "# 调整 oom_score_adj 保护关键进程\nsudo echo -1000 > /proc/<pid>/oom_score_adj\n# 加 swap 应急\nsudo fallocate -l 2G /swapfile && sudo mkswap /swapfile && sudo swapon /swapfile" },
     ],
   },
+  {
+    slug: "502-504-triage",
+    category: "system",
+    title: "nginx 502 / 504 排查 · 反代场景一条龙",
+    summary: "502=上游拒绝或崩了 / 504=上游太慢 · 4 步定性 + 分场景处方",
+    tags: ["nginx", "502", "504", "反代", "gateway"],
+    severity: "warn",
+    steps: [
+      { title: "先分清是 502 还是 504", desc: "502=connect/read 拒绝或崩溃  504=read timeout 超时", cmd: "curl -sI http://YOUR_HOST:PORT/ | head -1\n# 502 → 走 A 路径\n# 504 → 走 B 路径", tool: "curl" },
+      { title: "1) nginx 错误日志定性（关键字）", desc: "connect refused=上游没起 / prematurely closed=崩了 / timed out=网络不通 / no live upstreams=全挂", cmd: "tail -50 /var/log/nginx/error.log\n# 常见关键字:\n#   (111: Connection refused)\n#   upstream prematurely closed connection\n#   (110: Connection timed out)\n#   no live upstreams\n#   host not found in upstream" },
+      { title: "2) 上游进程活没活", cmd: "systemctl status my-svc\nss -ltnp | grep :<internal-port>\n# 没监听 → 服务挂了，跳到 A1" },
+      { title: "3) 从 nginx 机直连上游", desc: "本机 curl 上游端口，200=nginx 配错  非200=上游本身问题", cmd: "curl -v --max-time 5 http://127.0.0.1:<internal-port>/", tool: "curl" },
+      { title: "4) 上游自己的日志", cmd: "journalctl -u my-svc -n 200 --no-pager | grep -iE 'error|fatal|oom|econnrefused'\ndmesg 2>/dev/null | grep -i 'killed process' | tail -3", tool: "journalctl" },
+      { title: "A1 · 上游进程死了/没起", desc: "ss 看不到监听端口  systemctl 状态 failed/inactive", cmd: "systemctl restart my-svc\njournalctl -u my-svc -n 200 --no-pager\n# 常见根因: OOM / 端口占用 / node 版本不匹配 / 工作目录不对" },
+      { title: "A2 · 上游能起但秒崩（restart 循环）", cmd: "systemctl status my-svc | grep -E 'Active|Main PID|status'\n# 手动前台跑一次抓栈\ncd /opt/my-app && NODE_ENV=production PORT=3000 node server.js" },
+      { title: "A3 · nginx 到上游 Connection refused（本机）", desc: "curl 127.0.0.1:port 正常 但走域名 502 → nginx upstream 写错", cmd: "nginx -T | grep -A3 proxy_pass\nnginx -t && systemctl reload nginx" },
+      { title: "A4 · 跨机 connect timed out", desc: "上游 HOSTNAME 只绑 127.0.0.1 / 安全组 / selinux", cmd: "# 上游侧确认监听地址\nss -ltn | grep :<port>\n# selinux 场景\nsudo setsebool -P httpd_can_network_connect 1\n# 云主机安全组 / ufw / iptables 放行" },
+      { title: "A5 · upstream prematurely closed（大文件 / WebSocket）", cmd: "# nginx.conf http 或 server 段\nclient_max_body_size 50m;\nproxy_buffer_size    16k;\nproxy_buffers        8 16k;\nproxy_busy_buffers_size 32k;\n# WebSocket / SSE\nproxy_http_version 1.1;\nproxy_set_header Upgrade $http_upgrade;\nproxy_set_header Connection \"upgrade\";" },
+      { title: "B1 · 504 上游真的慢（业务问题）", cmd: "# 直接压 curl 看真实耗时\ncurl -s -o /dev/null -w 'time=%{time_total}s\\n' http://127.0.0.1:3000/slow\n# 临时放大 nginx 超时\nproxy_connect_timeout 10s;\nproxy_send_timeout    60s;\nproxy_read_timeout    300s;" },
+      { title: "B2 · 长连接 / 流式接口准点 60s 断", desc: "SSE、长轮询、大文件下载被默认 60s 截断 → 该 location 单独放宽 + 关缓冲", cmd: "location /api/stream {\n  proxy_pass http://127.0.0.1:3000;\n  proxy_read_timeout 3600s;\n  proxy_buffering off;\n}" },
+      { title: "B3 · upstream 用域名 host not found", cmd: "# 加 resolver 或直接用 IP\nresolver 8.8.8.8 223.5.5.5 valid=30s;\nupstream app { server 10.0.0.5:3000; }" },
+      { title: "B4 · 跨云跨地域丢包 / MTU", cmd: "mtr -rwzbc 50 <upstream-ip>\n# 隧道/PPPoE 场景改 MTU\nsudo ip link set eth0 mtu 1400", tool: "mtr" },
+      { title: "一键自检脚本", desc: "复制即用 · 6 步定性打印", cmd: "cat >/tmp/triage.sh <<'EOF'\n#!/usr/bin/env bash\nSVC=\"${1:-my-svc}\"; PORT=\"${2:-3000}\"\necho \"== service ==\"; systemctl is-active \"$SVC\"; systemctl show \"$SVC\" -p NRestarts --value\necho \"== listen  ==\"; ss -ltnp | grep \":$PORT \" || echo \"NOT LISTENING\"\necho \"== local   ==\"; curl -s -o /dev/null -w \"code=%{http_code} time=%{time_total}s\\n\" --max-time 5 \"http://127.0.0.1:$PORT/\"\necho \"== nginx err ==\"; tail -20 /var/log/nginx/error.log\necho \"== svc log ==\"; journalctl -u \"$SVC\" -n 200 --no-pager | grep -iE 'error|fatal|oom|econnrefused' | tail -10\necho \"== dmesg oom ==\"; dmesg 2>/dev/null | grep -i 'killed process' | tail -3\nEOF\nbash /tmp/triage.sh my-svc 3000" },
+    ],
+    relatedTools: ["curl", "netcat", "tcpdump", "mtr"],
+  },
 
   // ─────────────────── 云安全事件 ───────────────────
   {
