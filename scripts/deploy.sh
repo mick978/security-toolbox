@@ -87,6 +87,7 @@ Environment=RATE_LIMIT_DISABLED=1
 Environment="AUTH_USERS=${AUTH_USERS}"
 Environment="AUTH_SECRET=${AUTH_SECRET}"
 Environment=AUTH_TTL_HOURS=${AUTH_TTL_HOURS}
+Environment=AUTH_COOKIE_INSECURE=1
 ExecStart=${NODE_BIN} server.js
 Restart=always
 RestartSec=3

