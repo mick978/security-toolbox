@@ -1,10 +1,11 @@
 "use client";
 
+import { useRef } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Shield, Search, BookOpenText, Home } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { CommandMenu } from "@/components/command-menu";
+import { CommandMenu, type CommandMenuHandle } from "@/components/command-menu";
 
 const nav = [
   { href: "/", label: "首页", icon: Home },
@@ -14,6 +15,7 @@ const nav = [
 
 export function Header() {
   const pathname = usePathname();
+  const cmdRef = useRef<CommandMenuHandle>(null);
   return (
     <header className="sticky top-0 z-40 w-full border-b border-border/60 bg-background/80 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="container flex h-14 items-center justify-between">
@@ -44,7 +46,17 @@ export function Header() {
               </Link>
             );
           })}
-          <CommandMenu />
+          <button
+            type="button"
+            onClick={() => cmdRef.current?.open()}
+            className="ml-1 inline-flex items-center justify-center rounded-md border border-border/60 bg-secondary/40 p-1.5 text-muted-foreground hover:text-foreground transition-colors"
+            aria-label="搜索"
+          >
+            <Search className="h-4 w-4" />
+            <span className="hidden md:inline ml-1.5 text-xs">搜索</span>
+            <kbd className="hidden lg:inline-block ml-1.5 rounded bg-background border border-border/60 px-1 py-0.5 text-[10px]">⌘K</kbd>
+          </button>
+          <CommandMenu ref={cmdRef} />
         </nav>
       </div>
     </header>

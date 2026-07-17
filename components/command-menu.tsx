@@ -1,18 +1,28 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, forwardRef, useImperativeHandle } from "react";
 import { useRouter } from "next/navigation";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList, CommandDialog } from "@/components/ui/command";
 import { tools, categories } from "@/lib/tools";
 import { cheatsheets } from "@/lib/cheatsheets";
-import { Search } from "lucide-react";
 
-export function CommandMenu() {
+export interface CommandMenuHandle {
+  open: () => void;
+}
+
+export const CommandMenu = forwardRef<CommandMenuHandle>(function CommandMenu(_, ref) {
   const [open, setOpen] = useState(false);
   const router = useRouter();
 
+  useImperativeHandle(ref, () => ({
+    open: () => setOpen(true),
+  }));
+
   useEffect(() => {
     const down = (e: KeyboardEvent) => {
+      // 焦点在输入框时不拦截 / / k
+      const tag = (e.target as HTMLElement | null)?.tagName;
+      if (tag === "INPUT" || tag === "TEXTAREA") return;
       if ((e.key === "k" && (e.metaKey || e.ctrlKey)) || e.key === "/") {
         e.preventDefault();
         setOpen((v) => !v);
@@ -24,14 +34,6 @@ export function CommandMenu() {
 
   return (
     <>
-      <button
-        onClick={() => setOpen(true)}
-        className="ml-2 hidden md:inline-flex items-center gap-2 rounded-md border border-border/60 bg-secondary/40 px-2.5 py-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors"
-      >
-        <Search className="h-3.5 w-3.5" />
-        搜索工具
-        <kbd className="ml-2 rounded bg-background border border-border/60 px-1 py-0.5 text-[10px]">⌘K</kbd>
-      </button>
       <CommandDialog open={open} onOpenChange={setOpen}>
         <CommandInput placeholder="搜索工具、命令、场景…" />
         <CommandList>
@@ -87,4 +89,4 @@ export function CommandMenu() {
       </CommandDialog>
     </>
   );
-}
+});
