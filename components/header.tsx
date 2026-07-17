@@ -49,12 +49,12 @@ export function Header() {
           <button
             type="button"
             onClick={() => cmdRef.current?.open()}
-            className="ml-1 inline-flex items-center justify-center rounded-md border border-border/60 bg-secondary/40 p-1.5 text-muted-foreground hover:text-foreground transition-colors"
-            aria-label="搜索"
+            className="ml-1 inline-flex items-center justify-center gap-1.5 rounded-md border border-border/60 bg-secondary/40 px-2 py-1.5 text-xs text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors"
+            aria-label="打开搜索"
           >
-            <Search className="h-4 w-4" />
-            <span className="hidden md:inline ml-1.5 text-xs">搜索</span>
-            <kbd className="hidden lg:inline-block ml-1.5 rounded bg-background border border-border/60 px-1 py-0.5 text-[10px]">⌘K</kbd>
+            <Search className="h-3.5 w-3.5" />
+            <span className="hidden md:inline">搜索</span>
+            <kbd className="hidden lg:inline-flex rounded bg-background border border-border/60 px-1 py-0.5 text-[10px] font-mono">⌘K</kbd>
           </button>
           <CommandMenu ref={cmdRef} />
         </nav>
