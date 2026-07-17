@@ -1,17 +1,18 @@
 "use client";
 
-import { useState, Suspense } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useState, useEffect } from "react";
 
-function LoginForm() {
-  const router = useRouter();
-  const sp = useSearchParams();
-  const next = sp.get("next") || "/";
-
+export default function LoginPage() {
   const [user, setUser] = useState("");
   const [pass, setPass] = useState("");
   const [err, setErr] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [next, setNext] = useState("/");
+
+  useEffect(() => {
+    const sp = new URLSearchParams(window.location.search);
+    setNext(sp.get("next") || "/");
+  }, []);
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -29,8 +30,7 @@ function LoginForm() {
         setLoading(false);
         return;
       }
-      router.push(data.next || "/");
-      router.refresh();
+      window.location.href = data.next || "/";
     } catch {
       setErr("网络错误，请重试");
       setLoading(false);
@@ -92,13 +92,5 @@ function LoginForm() {
         </div>
       </div>
     </div>
-  );
-}
-
-export default function LoginPage() {
-  return (
-    <Suspense fallback={<div className="min-h-screen bg-slate-900" />}>
-      <LoginForm />
-    </Suspense>
   );
 }
