@@ -117,12 +117,26 @@ CommandList.displayName = "CommandList";
 
 export const CommandEmpty = React.forwardRef<
   React.ElementRef<typeof CommandPrimitive.Empty>,
-  React.ComponentPropsWithoutRef<typeof CommandPrimitive.Empty>
->((props, ref) => (
+  React.ComponentPropsWithoutRef<typeof CommandPrimitive.Empty> & { query?: string }
+>(({ query, ...props }, ref) => (
   <div className="py-12 text-center text-sm text-muted-foreground" ref={ref as any}>
     <Search className="mx-auto h-8 w-8 mb-2 opacity-30" />
-    <div>无匹配结果</div>
-    <div className="mt-1 text-xs text-muted-foreground/60">试试换个关键词,或直接浏览分类</div>
+    <div>没有匹配 {query ? `"${query}"` : "结果"}</div>
+    <div className="mt-1 text-xs text-muted-foreground/60">
+      试试换个关键词,或直接浏览分类
+      {query && (
+        <>
+          {" · "}
+          <button
+            type="button"
+            onClick={() => navigator.clipboard?.writeText(query)}
+            className="text-primary hover:underline"
+          >
+            复制查询
+          </button>
+        </>
+      )}
+    </div>
   </div>
 ));
 CommandEmpty.displayName = "CommandEmpty";
