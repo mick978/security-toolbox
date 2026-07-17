@@ -17,6 +17,11 @@ INTERNAL_PORT="${INTERNAL_PORT:-3000}"  # Next.js standalone listens here
 PUBLIC_PORT="${PUBLIC_PORT:-9119}"      # nginx exposes this
 NODE_BIN="${NODE_BIN:-/usr/bin/node}"   # remote node path
 
+# B1 auth env (required)
+: "${AUTH_USERS:?AUTH_USERS must be set, e.g. admin:pw1,guest:pw2}"
+: "${AUTH_SECRET:?AUTH_SECRET must be set (64 hex chars)}"
+AUTH_TTL_HOURS="${AUTH_TTL_HOURS:-168}"
+
 HERE="$(cd "$(dirname "$0")/.." && pwd)"
 STAMP="$(date +%Y%m%d-%H%M%S)"
 TARBALL="/tmp/security-toolbox-${STAMP}.tar.gz"
@@ -48,9 +53,11 @@ scp -q "$TARBALL" "${SSH_HOST}:/tmp/"
 # ---------- 4) remote install ----------
 log "remote install on ${SSH_HOST}"
 ssh "$SSH_HOST" bash -s -- \
-  "$REMOTE_DIR" "$SERVICE_NAME" "$INTERNAL_PORT" "$PUBLIC_PORT" "$NODE_BIN" "$STAMP" <<'REMOTE'
+  "$REMOTE_DIR" "$SERVICE_NAME" "$INTERNAL_PORT" "$PUBLIC_PORT" "$NODE_BIN" "$STAMP" \
+  "$AUTH_USERS" "$AUTH_SECRET" "$AUTH_TTL_HOURS" <<'REMOTE'
 set -euo pipefail
 REMOTE_DIR="$1"; SERVICE_NAME="$2"; INTERNAL_PORT="$3"; PUBLIC_PORT="$4"; NODE_BIN="$5"; STAMP="$6"
+AUTH_USERS="$7"; AUTH_SECRET="$8"; AUTH_TTL_HOURS="$9"
 TARBALL="/tmp/security-toolbox-${STAMP}.tar.gz"
 
 # unpack (blue-green light: keep prev as .bak)
@@ -77,6 +84,9 @@ Environment=NODE_ENV=production
 Environment=PORT=${INTERNAL_PORT}
 Environment=HOSTNAME=127.0.0.1
 Environment=RATE_LIMIT_DISABLED=1
+Environment="AUTH_USERS=${AUTH_USERS}"
+Environment="AUTH_SECRET=${AUTH_SECRET}"
+Environment=AUTH_TTL_HOURS=${AUTH_TTL_HOURS}
 ExecStart=${NODE_BIN} server.js
 Restart=always
 RestartSec=3
@@ -110,14 +120,19 @@ systemctl enable --now "$SERVICE_NAME"
 systemctl restart "$SERVICE_NAME"
 systemctl reload nginx || systemctl restart nginx
 
-# health probe
+# health probe (B1: unauth "/" now 307→/login; that's healthy)
 sleep 1
 for i in 1 2 3 4 5; do
   code=$(curl -s -o /dev/null -w '%{http_code}' "http://127.0.0.1:${INTERNAL_PORT}/") || code=000
-  [[ "$code" == "200" ]] && { echo "[remote] health OK ($code)"; break; }
+  [[ "$code" == "307" || "$code" == "200" ]] && { echo "[remote] health OK ($code)"; break; }
   sleep 1
 done
-[[ "$code" == "200" ]] || { echo "[remote] health FAIL — last=$code"; journalctl -u "$SERVICE_NAME" -n 40 --no-pager; exit 1; }
+[[ "$code" == "307" || "$code" == "200" ]] || { echo "[remote] health FAIL — last=$code"; journalctl -u "$SERVICE_NAME" -n 40 --no-pager; exit 1; }
+
+# extra: /login must return 200
+login_code=$(curl -s -o /dev/null -w '%{http_code}' "http://127.0.0.1:${INTERNAL_PORT}/login") || login_code=000
+[[ "$login_code" == "200" ]] || { echo "[remote] /login FAIL — code=$login_code"; journalctl -u "$SERVICE_NAME" -n 40 --no-pager; exit 1; }
+echo "[remote] /login OK ($login_code)"
 
 rm -f "$TARBALL"
 REMOTE

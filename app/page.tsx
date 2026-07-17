@@ -4,7 +4,7 @@ import { categories, tools } from "@/lib/tools";
 import { executorBySlug, EXECUTOR_SLUGS } from "@/lib/executors";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { ArrowRight, Terminal, Zap, Shield, ScanLine } from "lucide-react";
+import { ArrowRight, Terminal, Zap, Shield, ScanLine, ShieldAlert, Swords } from "lucide-react";
 
 export default function HomePage() {
   return (
@@ -40,7 +40,7 @@ export default function HomePage() {
               className="inline-flex items-center gap-2 rounded-md border border-border bg-secondary/40 px-5 py-2.5 text-sm font-medium hover:bg-secondary"
             >
               <Terminal className="h-4 w-4" />
-              场景排查速查 · 20 案例
+              场景排查速查 · 53 案例
             </Link>
             <Link
               href="/ip-intel"
@@ -56,6 +56,56 @@ export default function HomePage() {
             <Feature icon={ScanLine} text="真实示例 + 常用参数" />
             <Feature icon={Shield} text="每条命令标注平台 / 授权提醒" />
           </div>
+        </div>
+      </section>
+
+      {/* Red Team / Pentest 聚合 */}
+      <section className="container pt-8 pb-4">
+        <div className="rounded-lg border border-amber-500/40 bg-amber-500/5 p-4 text-sm text-amber-200/90 flex items-start gap-3">
+          <ShieldAlert className="h-5 w-5 shrink-0 text-amber-400 mt-0.5" />
+          <div>
+            <div className="font-semibold text-amber-300">⚠ 授权测试专用</div>
+            以下工具仅限用于 <strong>自建靶场 / CTF / 红队授权项目</strong>；未授权扫描或攻击真实系统属违法行为，一切法律责任由使用者自负。
+          </div>
+        </div>
+      </section>
+
+      <section className="container pb-16">
+        <div className="mb-6">
+          <h2 className="text-2xl font-bold flex items-center gap-2">
+            <Swords className="h-6 w-6 text-red-400" />
+            <span>红队 / 渗透测试</span>
+          </h2>
+          <p className="text-sm text-muted-foreground mt-1">
+            信息收集 → 漏扫 → 利用 → 后渗透 → C2 → 逆向，按 Kill Chain 分类聚合
+          </p>
+        </div>
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+          {[
+            { slug: "recon",    icon: "Search",      name: "信息收集 · Recon",     desc: "子域 / 端口 / 指纹 / OSINT",    accent: "text-sky-400" },
+            { slug: "vulnscan", icon: "ShieldAlert", name: "漏洞扫描 · VulnScan",  desc: "nuclei / nikto / wpscan / trivy", accent: "text-yellow-400" },
+            { slug: "exploit",  icon: "Zap",         name: "漏洞利用 · Exploit",   desc: "sqlmap / metasploit / poc",     accent: "text-red-400" },
+            { slug: "pentest",  icon: "Swords",      name: "渗透后渗透 · Pentest", desc: "hydra / hashcat / crackmapexec / impacket", accent: "text-orange-400" },
+            { slug: "c2",       icon: "Radio",       name: "C2 / 隧道 · C2",       desc: "sliver / chisel / frp / ligolo",  accent: "text-purple-400" },
+            { slug: "reverse",  icon: "Cpu",         name: "逆向工程 · Reverse",   desc: "ghidra / radare2 / frida / jadx", accent: "text-emerald-400" },
+          ].map((c) => {
+            const Icon = (Icons as any)[c.icon] ?? Icons.Circle;
+            const count = tools.filter((t) => t.category === c.slug).length;
+            return (
+              <Link key={c.slug} href={`/tools?cat=${c.slug}`} className="group">
+                <Card className="h-full transition-colors hover:border-red-500/60 hover:bg-red-500/5">
+                  <CardHeader>
+                    <div className="flex items-center justify-between">
+                      <Icon className={`h-6 w-6 ${c.accent}`} />
+                      <Badge>{count}</Badge>
+                    </div>
+                    <CardTitle className="mt-3">{c.name}</CardTitle>
+                    <CardDescription>{c.desc}</CardDescription>
+                  </CardHeader>
+                </Card>
+              </Link>
+            );
+          })}
         </div>
       </section>
 

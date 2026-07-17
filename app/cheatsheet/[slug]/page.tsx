@@ -4,6 +4,8 @@ import { cheatsheets, cheatBySlug, caseCategories } from "@/lib/cheatsheets";
 import { toolBySlug } from "@/lib/tools";
 import { Badge } from "@/components/ui/badge";
 import { CodeBlock } from "@/components/code-block";
+import { Mermaid } from "@/components/mermaid";
+import { Topology } from "@/components/topology";
 import { ArrowLeft, AlertTriangle, ShieldAlert } from "lucide-react";
 
 const sevStyle = {
@@ -64,6 +66,8 @@ export default async function CasePage({ params }: { params: Promise<{ slug: str
             </span>
             <h3 className="font-semibold mb-1.5 ml-2">{step.title}</h3>
             {step.desc && <p className="text-sm text-muted-foreground mb-2 ml-2">{step.desc}</p>}
+            {step.mermaid && <Mermaid chart={step.mermaid} />}
+            {step.topology && <Topology ascii={step.topology} />}
             {step.cmd && (
               <div className="ml-0">
                 <CodeBlock cmd={step.cmd} />

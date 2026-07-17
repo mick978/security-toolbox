@@ -3,6 +3,8 @@ export interface CheatsheetStep {
   desc?: string;
   cmd?: string;
   tool?: string;
+  mermaid?: string;   // Mermaid 图源码（客户端渲染流程图/时序图/决策树）
+  topology?: string;  // ASCII 拓扑图（<pre> 等宽渲染，零依赖）
 }
 export type CaseCategory = "network" | "attack" | "system" | "cloud" | "k8s" | "mobile" | "lateral";
 
@@ -36,7 +38,17 @@ export const cheatsheets: Cheatsheet[] = [
     summary: "从本地 DNS → 公共 DNS → 权威链 → 连通性依次排查",
     tags: ["dns", "解析"],
     steps: [
-      { title: "先看本地解析结果", cmd: "dig example.com +short\nnslookup example.com", tool: "dig" },
+      { title: "先看本地解析结果", desc: "有结果 → 本地 DNS 正常；SERVFAIL / 超时 / 空 → 往下走", cmd: "dig example.com +short\nnslookup example.com", tool: "dig", mermaid: `flowchart TD
+    A[域名打不开] --> B{dig +short 有结果?}
+    B -- 有 --> C{结果对不对?}
+    B -- 无/超时 --> D[本地 DNS 挂了]
+    C -- 对 --> E[排 TCP/HTTPS/防火墙]
+    C -- 错 --> F{换 8.8.8.8 一致?}
+    F -- 一致 --> G[权威 DNS 或 whois 过期]
+    F -- 不一致 --> H[本地/运营商 DNS 污染]
+    D --> I[换 8.8.8.8 / 1.1.1.1 / 223.5.5.5]
+    H --> J[flushcache + DoH/DoT + 换 resolver]
+    G --> K[dig +trace 追权威链]` },
       { title: "换公共 DNS 对比", desc: "本地和公共 DNS 差异大 → 本地/运营商 DNS 污染", cmd: "dig @8.8.8.8 example.com +short\ndig @1.1.1.1 example.com +short\ndig @223.5.5.5 example.com +short", tool: "dig" },
       { title: "追踪整个解析链", cmd: "dig example.com +trace", tool: "dig" },
       { title: "看 whois / 域名是否过期", cmd: "whois example.com | head -30", tool: "whois" },
@@ -52,7 +64,17 @@ export const cheatsheets: Cheatsheet[] = [
     tags: ["tls", "https", "证书"],
     steps: [
       { title: "看证书链和有效期", cmd: "echo | openssl s_client -connect example.com:443 -servername example.com 2>/dev/null | openssl x509 -noout -dates -issuer -subject", tool: "openssl" },
-      { title: "完整 handshake 诊断", cmd: "openssl s_client -connect example.com:443 -servername example.com -showcerts", tool: "openssl" },
+      { title: "完整 handshake 诊断", desc: "串起 s_client 5 模式：chain 看证书链、tls10-13 看协议、cipher 看套件", cmd: "openssl s_client -connect example.com:443 -servername example.com -showcerts", tool: "openssl", mermaid: `sequenceDiagram
+    autonumber
+    participant C as Client
+    participant S as Server
+    C->>S: ClientHello (SNI, ALPN, ciphers, TLS 1.2/1.3)
+    S->>C: ServerHello (chosen version + cipher)
+    S->>C: Certificate (chain: leaf → intermediate → root)
+    Note over C: 关键校验点<br/>- 有效期 (dates)<br/>- Issuer 是否被信任<br/>- SAN 匹配 SNI<br/>- 链是否完整
+    S->>C: ServerKeyExchange / Finished
+    C->>S: ClientKeyExchange / Finished
+    Note over C,S: 失败点定位<br/>bad cert = chain/dates<br/>handshake failure = cipher/tls 版本<br/>unknown_ca = 缺中间证书` },
       { title: "查是否有其他签发人签过该域名", cmd: "# 证书透明日志\ncurl -s 'https://crt.sh/?q=example.com&output=json' | jq '.[0:5]'", tool: "crtsh" },
       { title: "综合 TLS 报告", cmd: "testssl.sh --fast https://example.com", tool: "testssl" },
       { title: "第三方交叉验证", cmd: "打开 https://www.ssllabs.com/ssltest/analyze.html?d=example.com", tool: "ssllabs" },
@@ -119,7 +141,29 @@ export const cheatsheets: Cheatsheet[] = [
     summary: "Pod → Service → Ingress 分层定位",
     tags: ["docker", "k8s", "容器"],
     steps: [
-      { title: "Pod 里能不能出网", cmd: "kubectl exec -it <pod> -- sh -c 'curl -m 5 https://www.baidu.com; nslookup kubernetes.default'" },
+      { title: "Pod 里能不能出网", desc: "对照下图分层：Pod → kube-dns → Service ClusterIP → Endpoints → Ingress/NodePort", cmd: "kubectl exec -it <pod> -- sh -c 'curl -m 5 https://www.baidu.com; nslookup kubernetes.default'", topology: `┌───────────────────────── K8s Cluster ─────────────────────────┐
+│                                                               │
+│   ┌──────────────┐   ClusterIP    ┌──────────────┐            │
+│   │  Pod A       │ ─────────────► │ Service      │            │
+│   │ (client)     │                │ my-svc:80    │            │
+│   └──────┬───────┘                └──────┬───────┘            │
+│          │ DNS: my-svc.ns.svc.cluster.local (kube-dns/CoreDNS)│
+│          ▼                              │ selector            │
+│   ┌──────────────┐                      ▼                     │
+│   │ kube-dns     │            ┌──────────────────┐            │
+│   │ (CoreDNS)    │            │ Endpoints        │            │
+│   └──────────────┘            │ 10.244.1.5:8080  │            │
+│                               │ 10.244.2.7:8080  │            │
+│                               └────────┬─────────┘            │
+│                                        ▼                      │
+│                              ┌───────────────────┐            │
+│                              │  Pod B (backend)  │            │
+│                              └───────────────────┘            │
+│                                                               │
+│   Ingress ── NodePort ── LoadBalancer ── 外部流量入口         │
+└───────────────────────────────────────────────────────────────┘
+
+排查顺序:  Pod出网 → DNS → ClusterIP → Endpoints → Ingress` },
       { title: "跨 Pod DNS 解析", cmd: "kubectl exec -it <pod> -- nslookup my-svc.my-ns.svc.cluster.local" },
       { title: "Service ClusterIP 是否通", cmd: "kubectl get svc\nkubectl exec -it <pod> -- nc -zv <svc-clusterip> <port>" },
       { title: "看 Endpoints 是否为空", cmd: "kubectl get endpoints <svc-name>\nkubectl describe svc <svc-name>" },
@@ -321,7 +365,17 @@ export const cheatsheets: Cheatsheet[] = [
     summary: "定位攻击源 → 封禁 → 加固",
     tags: ["爆破", "ssh"],
     steps: [
-      { title: "看失败登录 TOP IP", cmd: "sudo journalctl -u ssh -u sshd --since '1 hour ago' | rg 'Failed password' | rg -oP 'from \\K\\S+' | sort | uniq -c | sort -rn | head", tool: "journalctl" },
+      { title: "看失败登录 TOP IP", desc: "定位攻击源 → 立即封 → 加固 sshd → 复盘", cmd: "sudo journalctl -u ssh -u sshd --since '1 hour ago' | rg 'Failed password' | rg -oP 'from \\K\\S+' | sort | uniq -c | sort -rn | head", tool: "journalctl", mermaid: `flowchart TD
+    A[告警: SSH 失败登录暴增] --> B[journalctl / auth.log 取 TOP IP]
+    B --> C{是否有 Accepted 成功?}
+    C -- 有 --> D[⚠ 已被爆破成功]
+    C -- 无 --> E[仅在爆破阶段]
+    D --> F[立即改密码 + 撤 key + 查 .ssh/authorized_keys]
+    D --> G[audit lastlog / who / w 看当前会话]
+    E --> H[fail2ban 自动封]
+    F --> H
+    H --> I[sshd_config 加固<br/>PermitRootLogin no<br/>PasswordAuth no<br/>改端口 / AllowUsers]
+    I --> J[跳板机 + MFA + 白名单]` },
       { title: "或读老式 auth.log", cmd: "sudo rg 'Failed password' /var/log/auth.log | rg -oP 'from \\K\\S+' | sort | uniq -c | sort -rn | head", tool: "ripgrep" },
       { title: "看是否有成功登录", desc: "如果既有大量失败又出现成功 → 高度可疑", cmd: "sudo journalctl -u ssh --since '1 hour ago' | rg 'Accepted'" },
       { title: "启用 fail2ban 自动封禁", cmd: "sudo apt install fail2ban -y\nsudo systemctl enable --now fail2ban\nsudo fail2ban-client status sshd", tool: "fail2ban" },
@@ -615,7 +669,29 @@ export const cheatsheets: Cheatsheet[] = [
     tags: ["k8s", "逃逸", "privileged"],
     severity: "danger",
     steps: [
-      { title: "扫全集群特权 Pod", cmd: "kubectl get pod -A -o json | jq -r '.items[] | select(.spec.containers[].securityContext.privileged==true) | \"\\(.metadata.namespace)/\\(.metadata.name)\"'" },
+      { title: "扫全集群特权 Pod", desc: "先理解容器边界 → 再排查哪些 Pod 越界", cmd: "kubectl get pod -A -o json | jq -r '.items[] | select(.spec.containers[].securityContext.privileged==true) | \"\\(.metadata.namespace)/\\(.metadata.name)\"'", topology: `┌───────────────────────── Node (Host) ─────────────────────────┐
+│                                                               │
+│   /                    (host root fs, host PID, host net)     │
+│   ├── /var/run/docker.sock  ◄── 挂进容器 = 逃逸金矿           │
+│   ├── /proc                 ◄── hostPID + /proc/1/root        │
+│   ├── /                     ◄── hostPath: / 挂到容器          │
+│                                                               │
+│   ┌─────────────── Pod (正常边界) ─────────────┐              │
+│   │  namespace: pid, net, mnt, uts, ipc, user  │              │
+│   │  cgroup: cpu/mem 限额                      │              │
+│   │  capabilities: 默认 drop 大部分            │              │
+│   │  seccomp/apparmor: 系统调用过滤            │              │
+│   └────────────────────────────────────────────┘              │
+│                                                               │
+│   ⚠ 逃逸信号                                                  │
+│   ├── privileged: true          → 全 cap + 无 seccomp         │
+│   ├── hostPID / hostNetwork     → 共享宿主机命名空间          │
+│   ├── hostPath / docker.sock    → 直接读写宿主机文件系统      │
+│   ├── CAP_SYS_ADMIN             → mount / 内核模块加载        │
+│   └── runAsUser: 0 + no PSA     → 容器内 root == 宿主 root    │
+└───────────────────────────────────────────────────────────────┘
+
+排查顺序:  privileged → hostPID/Net → hostPath → cap → PSA/OPA` },
       { title: "扫 hostPath / hostPID / hostNetwork", cmd: "kubectl get pod -A -o json | jq -r '.items[] | select(.spec.hostPID==true or .spec.hostNetwork==true or (.spec.volumes[]?.hostPath)) | \"\\(.metadata.namespace)/\\(.metadata.name) host=\\(.spec.hostPID)/\\(.spec.hostNetwork) vols=\\([.spec.volumes[]?.hostPath.path] | join(\",\"))\"'" },
       { title: "进容器看当前行为", cmd: "kubectl exec -n <ns> <pod> -- ps -ef\nkubectl exec -n <ns> <pod> -- ls -la /host 2>/dev/null\nkubectl exec -n <ns> <pod> -- cat /proc/1/cgroup\nkubectl logs -n <ns> <pod> --tail 200" },
       { title: "取证 + 隔离（不要删）", cmd: "# 快照文件\nkubectl cp <ns>/<pod>:/tmp ./forensic-$(date +%s)/\n# 打 taint 让它不能调度到别处\nkubectl cordon <node>\n# NetworkPolicy 断网\nkubectl apply -f - <<'YAML'\napiVersion: networking.k8s.io/v1\nkind: NetworkPolicy\nmetadata: { name: iso, namespace: <ns> }\nspec: { podSelector: { matchLabels: { app: <bad> } }, policyTypes: [Ingress, Egress] }\nYAML" },
