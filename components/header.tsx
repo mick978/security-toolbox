@@ -54,7 +54,7 @@ export function Header() {
           >
             <Search className="h-3.5 w-3.5" />
             <span className="hidden md:inline">搜索</span>
-            <kbd className="hidden lg:inline-flex rounded bg-background border border-border/60 px-1 py-0.5 text-[10px] font-mono">⌘K</kbd>
+            <kbd className="inline-flex rounded bg-background border border-border/60 px-1 py-0.5 text-[10px] font-mono">⌘K</kbd>
           </button>
           <CommandMenu ref={cmdRef} />
         </nav>
