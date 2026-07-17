@@ -1,3 +1,5 @@
+export const dynamic = "force-dynamic";
+
 import Link from "next/link";
 import * as Icons from "lucide-react";
 import { cheatsheets, caseCategories, casesByCategory } from "@/lib/cheatsheets";

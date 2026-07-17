@@ -1,3 +1,5 @@
+export const dynamic = "force-dynamic";
+
 // app/ip-intel/page.tsx — 服务端入口，导出 metadata
 import type { Metadata } from "next";
 import IpIntelClient from "./ip-intel-client";
