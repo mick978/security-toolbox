@@ -1,26 +1,9 @@
 "use client";
 
-import {
-  useEffect,
-  useState,
-  useRef,
-  forwardRef,
-  useImperativeHandle,
-  useSyncExternalStore,
-  useMemo,
-} from "react";
+import { useEffect, useState, useRef } from "react";
 import { useRouter } from "next/navigation";
-import * as Icons from "lucide-react";
-import {
-  CommandDialog,
-  CommandInput,
-  CommandList,
-  CommandEmpty,
-  CommandGroup,
-  CommandItem,
-  CommandFooter,
-} from "@/components/ui/command";
-import { tools, categories } from "@/lib/tools";
+import { Search, Terminal, BookOpenText, X, ArrowUp, ArrowDown, CornerDownLeft } from "lucide-react";
+import { tools } from "@/lib/tools";
 import { cheatsheets } from "@/lib/cheatsheets";
 import { cn } from "@/lib/utils";
 
@@ -28,354 +11,168 @@ export interface CommandMenuHandle {
   open: () => void;
 }
 
-// ============================================================
-// 工具函数
-// ============================================================
-
-// lucide 名 → 组件
-const IconCache = new Map<string, React.ComponentType<{ className?: string }>>();
-function getIcon(name?: string): React.ReactNode {
-  if (!name) return <Icons.Terminal className="h-3.5 w-3.5" />;
-  if (!IconCache.has(name)) {
-    const Cmp = (Icons as any)[name] ?? Icons.Terminal;
-    IconCache.set(name, Cmp);
-  }
-  const Cmp = IconCache.get(name)!;
-  return <Cmp className="h-3.5 w-3.5" />;
-}
-
-// 分类 slug → 中文 label
-const CAT_LABEL: Record<string, string> = {
-  network: "网络排查", attack: "攻击响应", system: "系统异常",
-  cloud: "云安全", k8s: "K8s 集群", mobile: "移动逆向", lateral: "内网横向",
-  recon: "信息收集", vulnscan: "漏洞扫描", exploit: "漏洞利用",
-  pentest: "渗透后渗透", c2: "C2 / 隧道", reverse: "逆向工程",
-  incident: "事件响应", forensics: "取证分析", monitoring: "监控",
-  baseline: "基线检查",
-  dns: "DNS 域名", connectivity: "连通路由", ports: "端口服务",
-  "http-tls": "HTTP/TLS", capture: "抓包分析", logs: "日志取证", online: "在线快检",
+type Item = {
+  slug: string;
+  label: string;
+  type: "tool" | "cheat";
+  desc?: string;
 };
 
-// 多 token fuzzy 高亮 (空格分词,转义正则)
-function Highlight({ text, q }: { text: string; q: string }) {
-  if (!q || !q.trim()) return <>{text}</>;
-  const tokens = q.trim().split(/\s+/).filter(Boolean).map((t) =>
-    t.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")
-  );
-  if (tokens.length === 0) return <>{text}</>;
-  const re = new RegExp(`(${tokens.join("|")})`, "gi");
-  const parts = text.split(re);
-  return (
-    <>
-      {parts.map((p, i) =>
-        i % 2 ? (
-          <mark
-            key={i}
-            className="rounded bg-yellow-200/70 dark:bg-yellow-500/30 px-0.5 text-foreground font-semibold"
-          >
-            {p}
-          </mark>
-        ) : (
-          <span key={i}>{p}</span>
-        )
-      )}
-    </>
-  );
+function getItems(): Item[] {
+  const toolItems: Item[] = tools.map((t) => ({
+    slug: t.slug,
+    label: t.name,
+    type: "tool" as const,
+    desc: t.tagline,
+  }));
+  const cheatItems: Item[] = cheatsheets.map((c) => ({
+    slug: c.slug,
+    label: c.title,
+    type: "cheat" as const,
+    desc: c.summary,
+  }));
+  return [...toolItems, ...cheatItems];
 }
 
-// ============================================================
-// Recent (localStorage)
-// ============================================================
-
-const RECENT_KEY = "security-toolbox.cmdk.recent";
-
-function readRecent(): { slug: string; type: "tool" | "cheat" }[] {
-  if (typeof window === "undefined") return [];
-  try {
-    return JSON.parse(localStorage.getItem(RECENT_KEY) || "[]").slice(0, 5);
-  } catch {
-    return [];
-  }
-}
-
-function writeRecent(slug: string, type: "tool" | "cheat") {
-  if (typeof window === "undefined") return;
-  try {
-    const arr = readRecent();
-    const next = [{ slug, type }, ...arr.filter((x) => x.slug !== slug)].slice(0, 5);
-    localStorage.setItem(RECENT_KEY, JSON.stringify(next));
-    window.dispatchEvent(new StorageEvent("storage"));
-  } catch {}
-}
-
-function useRecent() {
-  return useSyncExternalStore(
-    (cb) => {
-      if (typeof window === "undefined") return () => {};
-      window.addEventListener("storage", cb);
-      return () => window.removeEventListener("storage", cb);
-    },
-    readRecent,
-    () => []
-  );
-}
-
-// ============================================================
-// Scope Bar (Vercel 模式)
-// ============================================================
-
-type Scope = "all" | "tools" | "cheats" | "cats";
-const SCOPES: { id: Scope; label: string }[] = [
-  { id: "all", label: "全部" },
-  { id: "tools", label: "工具" },
-  { id: "cheats", label: "案例" },
-  { id: "cats", label: "分类" },
-];
-
-// ============================================================
-// Component
-// ============================================================
-
-export const CommandMenu = forwardRef<CommandMenuHandle>(function CommandMenu(_, ref) {
-  const [open, setOpen] = useState(false);
+export function CommandMenu({ open, onOpenChange }: { open: boolean; onOpenChange: (v: boolean) => void }) {
   const [query, setQuery] = useState("");
-  const [scope, setScope] = useState<Scope>("all");
+  const [selected, setSelected] = useState(0);
+  const inputRef = useRef<HTMLInputElement>(null);
   const router = useRouter();
-  const recent = useRecent();
 
-  useImperativeHandle(ref, () => ({
-    open: () => setOpen(true),
-  }), []);
+  const items = getItems();
+  const filtered = query.trim()
+    ? items.filter(
+        (i) =>
+          i.label.toLowerCase().includes(query.toLowerCase()) ||
+          i.slug.toLowerCase().includes(query.toLowerCase()) ||
+          (i.desc && i.desc.toLowerCase().includes(query.toLowerCase()))
+      )
+    : items;
 
-  // 关闭时清 query
+  const grouped = filtered.reduce<Record<string, Item[]>>((acc, item) => {
+    const key = item.type === "tool" ? "工具" : "案例";
+    if (!acc[key]) acc[key] = [];
+    acc[key].push(item);
+    return acc;
+  }, {});
+
   useEffect(() => {
-    if (!open) setQuery("");
+    if (open) {
+      setQuery("");
+      setSelected(0);
+      setTimeout(() => inputRef.current?.focus(), 50);
+    }
   }, [open]);
 
-  // 全局快捷键: ⌘K / Ctrl+K / /
   useEffect(() => {
-    const down = (e: KeyboardEvent) => {
-      const tag = (e.target as HTMLElement | null)?.tagName;
-      const inField = tag === "INPUT" || tag === "TEXTAREA" || (e.target as HTMLElement | null)?.isContentEditable;
-      // IME 组合输入不拦截
-      if (e.isComposing || e.keyCode === 229) return;
-
-      // ⌘K / Ctrl+K 全局生效
-      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k") {
-        e.preventDefault();
-        setOpen((v) => !v);
-        return;
-      }
-      // / 仅在非 input 中触发
-      if (e.key === "/" && !inField && !open) {
-        e.preventDefault();
-        setOpen(true);
-      }
+    if (!open) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onOpenChange(false);
     };
-    document.addEventListener("keydown", down);
-    return () => document.removeEventListener("keydown", down);
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, [open, onOpenChange]);
+
+  useEffect(() => {
+    if (!open) return;
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => { document.body.style.overflow = prev; };
   }, [open]);
 
-  // 工具索引: 用 category 反查 icon (兜底)
-  const catIconMap = useMemo(() => {
-    const m = new Map<string, string>();
-    categories.forEach((c) => m.set(c.slug, c.icon));
-    return m;
-  }, []);
-
-  // 跳转 + 记录最近
-  const goto = (url: string, slug: string, type: "tool" | "cheat") => {
-    writeRecent(slug, type);
-    setOpen(false);
-    router.push(url);
-  };
-
-  // ⌘+Enter / Shift+Enter 在新标签打开
-  const openInNewTab = (url: string) => {
-    window.open(url, "_blank", "noopener,noreferrer");
-    setOpen(false);
-  };
-
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    const active = document.querySelector('[cmdk-item][data-selected="true"]') as HTMLElement | null;
-    if (!active) return;
-    const href = active.getAttribute("data-href");
-    if (!href) return;
-    if (e.key === "Enter" && (e.metaKey || e.ctrlKey || e.shiftKey)) {
+  const handleKey = (e: React.KeyboardEvent) => {
+    if (e.key === "ArrowDown") {
       e.preventDefault();
-      openInNewTab(href);
+      setSelected((s) => Math.min(s + 1, filtered.length - 1));
+    } else if (e.key === "ArrowUp") {
+      e.preventDefault();
+      setSelected((s) => Math.max(s - 1, 0));
+    } else if (e.key === "Enter") {
+      e.preventDefault();
+      const item = filtered[selected];
+      if (item) goto(item);
     }
   };
 
-  const showTools = scope === "all" || scope === "tools";
-  const showCheats = scope === "all" || scope === "cheats";
-  const showCats = scope === "all" || scope === "cats";
+  const goto = (item: Item) => {
+    const url = item.type === "tool" ? `/tools/${item.slug}` : `/cheatsheet/${item.slug}`;
+    onOpenChange(false);
+    router.push(url);
+  };
+
+  if (!open) return null;
+
+  let flatIndex = 0;
 
   return (
-    <CommandDialog open={open} onOpenChange={setOpen} query={query}>
-      <div onKeyDown={handleKeyDown}>
-        <CommandInput
-          autoFocus
-          placeholder="搜索工具 / 案例 / 分类…"
-          onQueryChange={setQuery}
-        />
-
-        {/* Scope Bar */}
-        <div className="flex items-center gap-1 border-b border-border/60 bg-muted/20 px-2 py-1.5 text-xs">
-          {SCOPES.map((s) => (
-            <button
-              key={s.id}
-              type="button"
-              onClick={() => setScope(s.id)}
-              aria-pressed={scope === s.id}
-              className={cn(
-                "rounded-full px-3 py-1 transition-colors",
-                scope === s.id
-                  ? "bg-primary text-primary-foreground"
-                  : "text-muted-foreground hover:bg-accent"
-              )}
-            >
-              {s.label}
-            </button>
-          ))}
-          <span className="ml-auto text-[10px] text-muted-foreground hidden sm:inline">
-            <kbd className="rounded border border-border/60 bg-background px-1 py-0.5 font-mono">⏎</kbd> 打开
-            <span className="mx-1">·</span>
-            <kbd className="rounded border border-border/60 bg-background px-1 py-0.5 font-mono">⇧⏎</kbd> 新标签
-          </span>
+    <div
+      className="fixed inset-0 z-50 flex items-start justify-center bg-black/60 backdrop-blur-sm pt-[12vh] sm:pt-[15vh] px-4"
+      onClick={() => onOpenChange(false)}
+    >
+      <div
+        className="w-full max-w-2xl rounded-xl border border-border/50 bg-popover text-popover-foreground shadow-2xl overflow-hidden"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="flex items-center border-b border-border/40 px-3">
+          <Search className="h-4 w-4 text-muted-foreground shrink-0" />
+          <input
+            ref={inputRef}
+            value={query}
+            onChange={(e) => { setQuery(e.target.value); setSelected(0); }}
+            onKeyDown={handleKey}
+            placeholder="搜索工具或案例..."
+            className="flex-1 h-11 bg-transparent px-2 text-sm outline-none placeholder:text-muted-foreground"
+          />
+          <button onClick={() => onOpenChange(false)} className="p-1 hover:bg-secondary rounded">
+            <X className="h-4 w-4 text-muted-foreground" />
+          </button>
         </div>
 
-        <CommandList>
-          <CommandEmpty query={query} />
-
-          {/* 最近 */}
-          {recent.length > 0 && !query.trim() && (
-            <CommandGroup heading="最近使用">
-              {recent.map((r) => {
-                if (r.type === "tool") {
-                  const t = tools.find((x) => x.slug === r.slug);
-                  if (!t) return null;
-                  return (
-                    <CommandItem
-                      key={"r-" + r.slug}
-                      value={`recent ${t.slug} ${t.name} ${t.tagline}`}
-                      onSelect={() => goto(`/tools/${t.slug}`, t.slug, "tool")}
-                      icon={
-                        <div className="grid h-6 w-6 place-items-center rounded bg-primary/10 text-primary">
-                          {getIcon(t.icon || catIconMap.get(t.category))}
-                        </div>
-                      }
-                      shortcut="recent"
-                      query={query}
-                    >
-                      {t.name}
-                    </CommandItem>
-                  );
-                } else {
-                  const c = cheatsheets.find((x) => x.slug === r.slug);
-                  if (!c) return null;
-                  return (
-                    <CommandItem
-                      key={"r-" + r.slug}
-                      value={`recent ${c.slug} ${c.title}`}
-                      onSelect={() => goto(`/cheatsheet/${c.slug}`, c.slug, "cheat")}
-                      icon={
-                        <div className="grid h-6 w-6 place-items-center rounded bg-amber-500/10 text-amber-600">
-                          <Icons.BookOpen className="h-3.5 w-3.5" />
-                        </div>
-                      }
-                      shortcut="recent"
-                      query={query}
-                    >
-                      {c.title}
-                    </CommandItem>
-                  );
-                }
+        <div className="max-h-[50vh] overflow-y-auto p-2">
+          {Object.entries(grouped).map(([group, groupItems]) => (
+            <div key={group} className="mb-2">
+              <div className="px-2 py-1 text-xs font-medium text-muted-foreground">{group}</div>
+              {groupItems.map((item) => {
+                const idx = flatIndex++;
+                const isActive = idx === selected;
+                return (
+                  <button
+                    key={item.slug}
+                    onClick={() => goto(item)}
+                    onMouseEnter={() => setSelected(idx)}
+                    className={cn(
+                      "w-full flex items-center gap-2 px-2 py-2 rounded-md text-sm text-left transition-colors",
+                      isActive ? "bg-secondary text-foreground" : "text-muted-foreground hover:text-foreground"
+                    )}
+                  >
+                    {item.type === "tool" ? (
+                      <Terminal className="h-3.5 w-3.5 shrink-0" />
+                    ) : (
+                      <BookOpenText className="h-3.5 w-3.5 shrink-0" />
+                    )}
+                    <div className="flex-1 min-w-0">
+                      <div className="truncate font-medium">{item.label}</div>
+                      {item.desc && (
+                        <div className="truncate text-xs text-muted-foreground">{item.desc}</div>
+                      )}
+                    </div>
+                  </button>
+                );
               })}
-            </CommandGroup>
+            </div>
+          ))}
+          {filtered.length === 0 && (
+            <div className="py-8 text-center text-sm text-muted-foreground">没有找到匹配项</div>
           )}
+        </div>
 
-          {/* 工具 */}
-          {showTools && (
-            <CommandGroup heading={`工具 · ${tools.length}`}>
-              {tools.map((t) => (
-                <CommandItem
-                  key={t.slug}
-                  value={`tool ${t.name} ${t.tagline} ${t.tags.join(" ")} ${t.description}`}
-                  onSelect={() => goto(`/tools/${t.slug}`, t.slug, "tool")}
-                  data-href={`/tools/${t.slug}`}
-                  icon={
-                    <div className="grid h-6 w-6 place-items-center rounded bg-primary/10 text-primary">
-                      {getIcon(t.icon || catIconMap.get(t.category))}
-                    </div>
-                  }
-                  description={t.tagline}
-                  shortcut="⏎"
-                  query={query}
-                >
-                  {t.name}
-                </CommandItem>
-              ))}
-            </CommandGroup>
-          )}
-
-          {/* 案例 */}
-          {showCheats && (
-            <CommandGroup heading={`排查案例 · ${cheatsheets.length}`}>
-              {cheatsheets.map((c) => (
-                <CommandItem
-                  key={c.slug}
-                  value={`cheat ${c.title} ${c.summary} ${c.tags.join(" ")} ${CAT_LABEL[c.category] ?? ""}`}
-                  onSelect={() => goto(`/cheatsheet/${c.slug}`, c.slug, "cheat")}
-                  data-href={`/cheatsheet/${c.slug}`}
-                  icon={
-                    <div className="grid h-6 w-6 place-items-center rounded bg-amber-500/10 text-amber-600">
-                      <Icons.BookOpen className="h-3.5 w-3.5" />
-                    </div>
-                  }
-                  description={CAT_LABEL[c.category] ?? c.category}
-                  shortcut="⏎"
-                  query={query}
-                >
-                  {c.title}
-                </CommandItem>
-              ))}
-            </CommandGroup>
-          )}
-
-          {/* 分类 */}
-          {showCats && (
-            <CommandGroup heading={`分类 · ${categories.length}`}>
-              {categories.map((c) => (
-                <CommandItem
-                  key={c.slug}
-                  value={`分类 ${c.name} ${c.short} ${c.description}`}
-                  onSelect={() => goto(`/tools?cat=${c.slug}`, c.slug, "tool")}
-                  data-href={`/tools?cat=${c.slug}`}
-                  icon={
-                    <div className="grid h-6 w-6 place-items-center rounded bg-secondary text-muted-foreground">
-                      {getIcon(c.icon)}
-                    </div>
-                  }
-                  description={c.short}
-                  shortcut="⏎"
-                  query={query}
-                >
-                  {c.name}
-                </CommandItem>
-              ))}
-            </CommandGroup>
-          )}
-        </CommandList>
+        <div className="border-t border-border/40 px-3 py-2 flex items-center gap-4 text-xs text-muted-foreground">
+          <span className="flex items-center gap-1"><ArrowUp className="h-3 w-3" /><ArrowDown className="h-3 w-3" /> 移动</span>
+          <span className="flex items-center gap-1"><CornerDownLeft className="h-3 w-3" /> 选择</span>
+          <span className="flex items-center gap-1">ESC 关闭</span>
+        </div>
       </div>
-
-      <CommandFooter
-        counts={{
-          categories: categories.length,
-          tools: tools.length,
-          cases: cheatsheets.length,
-        }}
-      />
-    </CommandDialog>
+    </div>
   );
-});
+}

@@ -1,0 +1,182 @@
+name: "修复 Next.js 16 Header 水合错误并重设计导航栏"
+description: "分析 React #185 水合错误根因（cmdk 1.0.4 + React 19），重新设计并实现 SSR/CSR 一致的 Header 导航组件"
+
+agents_dir: "agency-agents-zh"
+
+llm:
+  provider: claude-code
+  max_tokens: 4096
+  timeout: 300000
+  retry: 2
+
+concurrency: 2
+
+steps:
+  - id: analyze_hydration_error
+    role: "engineering/engineering-senior-developer"
+    name: "高级开发者（根因分析）"
+    emoji: "👨‍💻"
+    task: |
+      你是资深全栈开发者，请对以下 React #185 水合错误做根因分析。
+
+      【项目背景】
+      - 技术栈：Next.js 16.2.10（App Router）+ React 19.0.0 + cmdk 1.0.4 + lucide-react + Tailwind CSS
+      - 项目：security-toolbox 网站
+      - 症状：Header 组件服务端渲染正常，但客户端水合失败，抛出 React error #185（水合不匹配：服务端 HTML 与客户端首次渲染结果不一致）
+      - Header 组件使用了 cmdk 的 CommandMenu（命令面板）和 lucide-react 图标
+      - 临时处理：已移除 Header，站点可用但无导航
+
+      【分析要求】
+      请系统性地排查 React #185 在该技术栈下的所有可能根因，并按可能性排序：
+      1. cmdk 1.0.4 内部实现问题：是否在水合阶段读取了浏览器专有 API（window、document、matchMedia、localStorage）？是否使用了 useLayoutEffect、随机 ID、内部状态导致的初始渲染差异？
+      2. React 19 变更影响：React 19 对水合 mismatch 的处理更严格，cmdk 1.0.4 是否声明支持 React 19？peerDependencies 是否匹配？
+      3. 常见水合陷阱：条件渲染依赖客户端状态、Date/随机数、浏览器扩展注入、HTML 嵌套非法（如 <div> 嵌在 <p> 里）、Portal 挂载时机
+      4. lucide-react 图标在 SSR/CSR 下是否会产生属性差异
+
+      【输出格式】
+      - 根因列表（按可能性排序，每条包含：根因描述、触发机制、验证方法）
+      - 最可能的 1-2 个根因的结论
+      - 修复方向建议（不超过 3 条）
+      总输出控制在 600 字以内。
+    output: root_cause_analysis
+
+  - id: research_cmdk_react19
+    role: "engineering/engineering-frontend-developer"
+    name: "前端开发者（兼容性调研）"
+    emoji: "💻"
+    task: |
+      你是前端专家，请调研 cmdk 1.0.4 与 React 19 / Next.js 16 的兼容性，并总结"水合安全"的命令面板实现模式。
+
+      【项目背景】
+      - 技术栈：Next.js 16.2.10（App Router）+ React 19.0.0 + cmdk 1.0.4 + Tailwind CSS
+      - 问题：Header 中的 cmdk CommandMenu 导致 React #185 水合错误
+
+      【调研内容】
+      1. cmdk 1.0.4 的 React 19 兼容性：已知 issue、官方修复版本、社区 workaround
+      2. Next.js App Router 中实现"仅客户端渲染"组件的标准模式：
+         - next/dynamic 的 ssr: false 方案（注意：Server Component 中不能直接用 ssr:false，需要包一层 Client Component）
+         - mounted 状态门控（useEffect + useState 的 isMounted 模式）及其利弊
+         - useSyncExternalStore 方案
+      3. 命令面板的推荐架构：触发按钮（SSR 安全）与面板本体（客户端懒加载）分离的模式
+      4. 键盘快捷键（Cmd+K / Ctrl+K）监听的水合安全写法
+
+      【输出格式】
+      - 兼容性结论（cmdk 1.0.4 能否直接用于 React 19，若不能给出替代方案或升级路径）
+      - 推荐的实现模式（含关键代码骨架，每个骨架不超过 20 行）
+      - 需要避开的反模式清单
+      总输出控制在 700 字以内。
+    output: compatibility_research
+
+  - id: design_header
+    role: "design/design-ux-architect"
+    name: "UX 架构师（导航设计）"
+    emoji: "🏗️"
+    task: |
+      你是 UX 架构师，请为 security-toolbox 网站设计新的 Header 导航栏方案。
+
+      【必须保留的功能】
+      1. 导航链接（站点各主要页面的链接）
+      2. 搜索按钮（视觉触发入口）
+      3. 命令面板（cmdk CommandMenu，支持 Cmd+K / Ctrl+K 唤起）
+
+      【技术约束】
+      - Next.js 16.2.10 App Router + React 19.0.0 + Tailwind CSS
+      - 必须保证 SSR/CSR 渲染结果完全一致，杜绝 React #185 水合错误
+      - 服务端渲染的 HTML 必须是完整可用的导航（不依赖任何客户端状态）
+
+      【上游分析结论，设计时必须规避其中的坑】
+      根因分析：
+      {{root_cause_analysis}}
+
+      兼容性调研：
+      {{compatibility_research}}
+
+      【设计要求】
+      1. 组件拆分架构：明确哪些是 Server Component、哪些是 Client Component、哪些需要动态加载，画出组件树
+      2. 布局与样式：桌面端 + 移动端的导航布局（含移动端汉堡菜单的水合安全实现），给出 Tailwind 类名级别的样式规范
+      3. 交互设计：搜索按钮样式（含 ⌘K 快捷键提示）、命令面板唤起/关闭交互、当前页面高亮态
+      4. 水合安全清单：逐项说明设计中如何避免上游分析出的每个根因
+
+      【输出格式】
+      一份结构化的设计规格说明，包含：组件树、样式规范、交互规范、水合安全清单。控制在 700 字以内。
+    output: header_design
+    depends_on: [analyze_hydration_error, research_cmdk_react19]
+
+  - id: implement_header
+    role: "engineering/engineering-frontend-developer"
+    name: "前端开发者（代码实现）"
+    emoji: "💻"
+    task: |
+      你是前端开发专家，请根据设计规格完整实现新的 Header 组件。
+
+      【技术栈】Next.js 16.2.10 App Router + React 19.0.0 + cmdk 1.0.4 + lucide-react + Tailwind CSS
+
+      【设计规格】
+      {{header_design}}
+
+      【必须规避的根因】
+      {{root_cause_analysis}}
+
+      【实现要求】
+      1. 输出完整可运行的代码文件，禁止占位符和省略号，每个文件标注文件路径：
+         - components/header.tsx（服务端安全的导航骨架：logo、导航链接、搜索按钮）
+         - components/command-menu.tsx（命令面板，客户端组件，含 Cmd+K / Ctrl+K 快捷键监听）
+         - 如设计中有移动端菜单、动态加载包装器等，一并输出对应文件
+      2. 服务端渲染的 HTML 必须与客户端首次渲染完全一致：不在渲染期读取 window/document，不用随机 ID，不用 Date.now()，不用 mounted 门控改变首屏结构（命令面板本体用 next/dynamic ssr:false 或等效方案，且不影响首屏 HTML）
+      3. 导航链接使用 next/link，当前页面高亮用 usePathname（注意其水合安全用法）
+      4. 图标统一使用 lucide-react
+      5. 全部样式使用 Tailwind CSS，支持暗色模式（dark: 前缀）
+      6. 代码总量控制在 300 行以内，关键水合安全点用注释标明
+    output: header_implementation
+    depends_on: [design_header]
+
+  - id: review_code
+    role: "engineering/engineering-code-reviewer"
+    name: "代码审查员（审查修订）"
+    emoji: "👀"
+    task: |
+      你是代码审查专家，请审查以下 Header 实现代码，并直接输出修订后的最终代码。
+
+      【待审查代码】
+      {{header_implementation}}
+
+      【设计规格（用于核对功能完整性）】
+      {{header_design}}
+
+      【审查清单】
+      1. 水合安全（最高优先级）：逐行检查是否存在 SSR/CSR 不一致风险——渲染期访问 window/document/localStorage、随机值、Date、useLayoutEffect 警告、mounted 门控改变首屏结构、next/dynamic ssr:false 在 Server Component 中误用
+      2. 正确性：React 19 API 用法、Next.js 16 App Router 约定（'use client' 指令位置、Server/Client 组件边界）、cmdk 1.0.4 API 用法
+      3. 功能完整性：导航链接、搜索按钮、命令面板、Cmd+K 快捷键、移动端菜单是否全部实现
+      4. 可访问性：aria 属性、键盘导航、焦点管理
+      5. 性能：命令面板是否懒加载、有无不必要的客户端组件化
+
+      【输出要求】
+      直接输出修订后的完整最终代码（每个文件标注路径），修复所有发现的问题。不要只给修改建议列表——要给出可直接使用的完整代码。代码总量控制在 320 行以内。
+    output: reviewed_code
+    depends_on: [implement_header]
+
+  - id: verify_and_deliver
+    role: "testing/testing-reality-checker"
+    name: "现实检验者（验证交付）"
+    emoji: "🎯"
+    task: |
+      你是基于证据的质量检验专家，请对最终 Header 代码做交付前验证，并输出最终交付物。
+
+      【最终代码】
+      {{reviewed_code}}
+
+      【验证清单（逐项给出 通过/不通过 及证据）】
+      1. 水合安全：代码中不存在任何会导致 React #185 的模式（渲染期浏览器 API、随机值、首屏结构依赖客户端状态）——引用具体代码行作为证据
+      2. SSR/CSR 一致性：推演服务端渲染输出的 HTML 结构，确认客户端首次渲染会产生完全相同的 DOM 树
+      3. 功能完整性：导航链接 ✅、搜索按钮 ✅、命令面板（cmdk）✅、Cmd+K / Ctrl+K 快捷键 ✅、移动端适配 ✅
+      4. 技术栈匹配：Next.js 16.2.10 App Router 约定、React 19.0.0、cmdk 1.0.4、lucide-react、Tailwind CSS
+      5. 所有页面可用性：Header 作为布局组件嵌入后，各页面均能正常渲染导航
+
+      【交付物输出格式】
+      1. 验证结果表（每项：结论 + 一行证据）
+      2. 最终完整代码（原样输出通过验证的全部文件，标注文件路径）
+      3. 集成说明（3 步以内：如何在 app/layout.tsx 中挂载 Header）
+
+      ⚠️ 只输出最终成品本身：不要开场白、不要复盘或说明、不要向用户提问、不要建议任何命令或后续动作。
+    output: final_deliverable
+    depends_on: [review_code]

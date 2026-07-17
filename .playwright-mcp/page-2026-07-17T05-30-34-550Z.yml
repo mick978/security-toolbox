@@ -1,0 +1,37 @@
+- generic [ref=e1]:
+  - banner [ref=e2]:
+    - generic [ref=e3]:
+      - link "SecToolbox 网络安全排查手册" [ref=e4] [cursor=pointer]:
+        - /url: /
+        - generic [ref=e7]: SecToolbox
+        - generic [ref=e8]: 网络安全排查手册
+      - navigation [ref=e9]:
+        - link "首页" [ref=e10] [cursor=pointer]:
+          - /url: /
+        - link "工具库" [ref=e15] [cursor=pointer]:
+          - /url: /tools
+        - link "排查案例" [ref=e20] [cursor=pointer]:
+          - /url: /cheatsheet
+        - button "打开搜索" [ref=e24] [cursor=pointer]:
+          - generic [ref=e28]: 搜索
+          - generic [ref=e29]: ⌘K
+  - main [ref=e30]:
+    - generic [ref=e32]:
+      - generic [ref=e33]:
+        - generic [ref=e34]: 🛡️ SecToolbox
+        - generic [ref=e35]: 网络运维 & 安全排查平台
+      - generic [ref=e36]:
+        - generic [ref=e37]:
+          - generic [ref=e38]: 用户名
+          - textbox "admin" [active] [ref=e39]
+        - generic [ref=e40]:
+          - generic [ref=e41]: 密码
+          - textbox "••••••••" [ref=e42]
+        - button "登录" [ref=e43] [cursor=pointer]
+      - generic [ref=e44]: 仅限授权用户使用 · 所有操作将被记录
+  - contentinfo [ref=e45]:
+    - paragraph [ref=e46]:
+      - text: SecToolbox · 面向工程师的网络安全排查手册 ·
+      - link "MIT" [ref=e47] [cursor=pointer]:
+        - /url: https://github.com
+    - paragraph [ref=e48]: 所有扫描 / 渗透类工具仅限对拥有明确授权的目标使用。
