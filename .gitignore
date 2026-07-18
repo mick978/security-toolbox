@@ -34,3 +34,11 @@ next-env.d.ts
 # misc
 *.pem
 coverage/
+
+# local Claude tooling (worktrees, MCP session logs, settings)
+.claude/
+.playwright-mcp/
+
+# reference screenshots from prior iterations
+ao-*.png
+sec-toolbox-*.png
