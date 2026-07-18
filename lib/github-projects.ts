@@ -69,7 +69,7 @@ export async function fetchReadme(p: GitHubProject): Promise<string | null> {
 /** Format large star counts: 10356 -> "10.4k", 999 -> "999", 256335 -> "256k". */
 export function formatStars(n: number): string {
   if (n < 1000) return n.toString();
-  if (n < 10000) return (n / 1000).toFixed(1).replace(/\.0$/, "") + "k";
+  if (n < 100000) return (n / 1000).toFixed(1).replace(/\.0$/, "") + "k";
   if (n < 1000000) return Math.round(n / 1000) + "k";
   return (n / 1000000).toFixed(1).replace(/\.0$/, "") + "M";
 }
