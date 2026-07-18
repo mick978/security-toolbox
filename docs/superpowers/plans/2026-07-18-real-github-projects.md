@@ -1481,26 +1481,72 @@ git commit -m "feat(agents): list cards link to /agents/[slug] and render real d
 **Files:**
 - Modify: `app/page.tsx`
 
-- [ ] **Step 1: Read the current import and per-area count usage**
-
-In `app/page.tsx`, the file imports `securityAgents` and `agentCategories` from `@/lib/agents`, and uses them for:
+The homepage `app/page.tsx` imports `securityAgents` and `agentCategories` from `@/lib/agents`, and uses them for:
 - a stat card `{ value: securityAgents.length.toString(), label: "AI Agent", icon: Bot }`
 - a per-area count `securityAgents.filter((a) => a.category === c.slug).length`
+- a description `{c.description}` rendered inside `agentCategories.map(...)`
 
-Since we re-exported `securityAgents = agentProjects` and `agentCategories = securityAreas`, the only field rename to fix is `a.category` → `a.area` (securityAreas uses `slug`, not `category`).
+Since we re-exported `securityAgents = agentProjects` and `agentCategories = securityAreas`, **three** field-name fixes are needed in the `agentCategories` block. The first map (lines 169–189) iterates `categories` from `lib/tools` and is unrelated — leave it alone.
 
-- [ ] **Step 2: Apply the field rename**
+- [ ] **Step 1: Read `app/page.tsx` and locate the `agentCategories` block**
 
-Find the line:
-```ts
-const count = securityAgents.filter((a) => a.category === c.slug).length;
+The `agentCategories` block is the second `.map()` in the file (around lines 240–259), in the "AI Agent" section. It contains three field references that need to be fixed because `SecurityAreaMeta` uses different field names than the old `agentCategories` did:
+- `a.category` → `a.area` (now `agentCategories[i].slug`; `securityAgents[i].area === c.slug`).
+- `<Bot>` fallback icon — KEEP as-is, still valid.
+- `c.description` → removed. `SecurityAreaMeta` has no `description` field. Replace the entire `<CardDescription>{c.description}</CardDescription>` line with an empty fragment `<></>` (or simply delete that line) so the homepage keeps its current visual rhythm without erroring out.
+
+- [ ] **Step 2: Apply the field renames and remove the description**
+
+Find this exact block (do NOT touch the first `categories.map(...)` for tools):
+
+```tsx
+          {agentCategories.slice(0, 6).map((c) => {
+            const Icon = (Icons as any)[c.icon] ?? Icons.Bot;
+            const count = securityAgents.filter((a) => a.category === c.slug).length;
+            return (
+              <Link key={c.slug} href={`/agents?cat=${c.slug}`} className="group">
+                <Card className="h-full transition-colors hover:border-primary/60">
+                  <CardHeader>
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-primary/10">
+                        <Icon className="h-5 w-5 text-primary" />
+                      </div>
+                      <Badge>{count}</Badge>
+                    </div>
+                    <CardTitle className="mt-3">{c.name}</CardTitle>
+                    <CardDescription>{c.description}</CardDescription>
+                  </CardHeader>
+                </Card>
+              </Link>
+            );
+          })}
 ```
-and replace it with:
-```ts
-const count = securityAgents.filter((a) => a.area === c.slug).length;
+
+Replace it with:
+
+```tsx
+          {agentCategories.slice(0, 6).map((c) => {
+            const Icon = (Icons as any)[c.icon] ?? Icons.Bot;
+            const count = securityAgents.filter((a) => a.area === c.slug).length;
+            return (
+              <Link key={c.slug} href={`/agents?cat=${c.slug}`} className="group">
+                <Card className="h-full transition-colors hover:border-primary/60">
+                  <CardHeader>
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-primary/10">
+                        <Icon className="h-5 w-5 text-primary" />
+                      </div>
+                      <Badge>{count}</Badge>
+                    </div>
+                    <CardTitle className="mt-3">{c.name}</CardTitle>
+                  </CardHeader>
+                </Card>
+              </Link>
+            );
+          })}
 ```
 
-(If the exact context differs because the field name differs, find the equivalent spot and ensure the comparison uses `a.area`.)
+If the actual current code uses different class names on the `<Card>` or other line-wrap differences from the snippet above, preserve those — apply ONLY the three changes: `a.category` → `a.area`, and delete the `<CardDescription>{c.description}</CardDescription>` line entirely.
 
 - [ ] **Step 3: Verify typecheck and build**
 
@@ -1511,8 +1557,10 @@ Expected: zero errors.
 
 ```bash
 git add app/page.tsx
-git commit -m "fix(home): use new agent area field for per-category counts"
+git commit -m "fix(home): use new agent area field, drop absent description prop"
 ```
+
+> **Why this fix is more than a field rename:** the old `agentCategories` entries carried a `description` field; `SecurityAreaMeta` does not. Removing the line keeps the homepage rendering. Task 12 (final build verification) confirms the agent cards still display counts from real projects.
 
 ---
 
