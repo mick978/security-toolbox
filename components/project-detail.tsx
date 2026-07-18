@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Star, Github, ExternalLink, Terminal, Layers } from "lucide-react";
+import { Star, Github, ExternalLink, Terminal, Layers, Languages } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Markdown } from "@/components/markdown";
 import {
@@ -72,10 +72,23 @@ export async function ProjectDetail({ project, readme }: ProjectDetailProps) {
         {project.notable && (
           <div className="p-3 rounded-lg bg-secondary/30 border border-border/40 text-sm text-muted-foreground">
             <span className="text-foreground font-medium">为什么收录：</span>
-            {project.notable}
+            {project.whyCn ?? project.notable}
           </div>
         )}
       </header>
+
+      {/* Chinese overview — prepended above the English README */}
+      {project.descriptionCn && (
+        <section className="rounded-lg border border-primary/30 bg-primary/5 p-5 space-y-2">
+          <h2 className="text-base font-semibold flex items-center gap-2 text-primary">
+            <Languages className="h-4 w-4" />
+            中文概述
+          </h2>
+          <p className="text-sm text-foreground/90 leading-relaxed">
+            {project.descriptionCn}
+          </p>
+        </section>
+      )}
 
       {/* README or fallback */}
       <section>
