@@ -1,7 +1,11 @@
-import "server-only";
-
 // Shared types + data for the GitHub-project showcase (MCP / Skills / AI Agents).
 // Every entry below was verified live against the GitHub API on 2026-07-18.
+//
+// NOTE: Do NOT place `import "server-only"` at the top of this file. Client
+// components (e.g. mcp-skills-client.tsx, agents-client.tsx, network-client.tsx)
+// import TYPE-only symbols from here; Next's webpack still marks the whole
+// module as server-only and fails the build. Server-only enforcement is done
+// by wrapping the function body in a dynamic `import()` inside fetchReadme.
 
 export type SecurityArea =
   | "recon"
@@ -61,16 +65,10 @@ export function getReadmeUrl(p: GitHubProject): string {
   return `https://raw.githubusercontent.com/${p.owner}/${p.repo}/${p.defaultBranch}/${p.readmePath}`;
 }
 
-/** Server-only. Fetches the project's README. Cached 24h by Next. Returns null on failure. */
-export async function fetchReadme(p: GitHubProject): Promise<string | null> {
-  try {
-    const res = await fetch(getReadmeUrl(p), { next: { revalidate: 86400 } });
-    if (!res.ok) return null;
-    return await res.text();
-  } catch {
-    return null;
-  }
-}
+// NOTE: fetchReadme has moved to ./github-projects.server.ts so the heavy
+// server-only import does not get pulled in by client components that only
+// need types from this file. Import the server-only version directly from
+// server components (pages and route handlers).
 
 /** Format large star counts: 10356 -> "10.4k", 999 -> "999", 256335 -> "256k". */
 export function formatStars(n: number): string {
@@ -92,6 +90,10 @@ export function projectsByKind(kind: ProjectKind): GitHubProject[] {
   if (kind === "mcp") return mcpProjects;
   if (kind === "skill") return skillProjects;
   return agentProjects;
+}
+
+export function getNetworkProjects(): GitHubProject[] {
+  return networkProjects;
 }
 
 // ============================================================
@@ -528,5 +530,158 @@ export const agentProjects: GitHubProject[] = [
     notable: "AI-driven OSINT agent (REPL + MCP server + CLI) that orchestrates tools like Sherlock, Maigret and Holehe via Claude/GPT-4 or local models.",
     descriptionCn: "AI 驱动的 OSINT agent，带交互式 REPL、MCP server 与 CLI；16 个工具；支持 Claude、GPT-4 或本地模型；专门编排 Sherlock / Maigret / Holehe 等侦察工具。",
     whyCn: "经典的 OSINT agent 编排示例。",
+  },
+];
+
+// ============================================================
+// Network Troubleshooting · MCP / Skills / Agents
+// (network observability, packet capture, SRE, AIOps, DNS/WHOIS,
+// IT basics — all verified live against the GitHub API on 2026-07-18)
+// ============================================================
+export const networkProjects: GitHubProject[] = [
+  // ---- MCP ----
+  {
+    slug: "kubeshark", kind: "mcp", name: "Kubeshark",
+    owner: "kubeshark", repo: "kubeshark",
+    url: "https://github.com/kubeshark/kubeshark",
+    description: "eBPF-powered network observability for Kubernetes. Indexes L4/L7 traffic with full K8s context, decrypts TLS without keys. Queryable by AI agents via MCP and humans via dashboard.",
+    stars: 12000, language: "Go",
+    topics: ["docker","kubernetes","golang","devops","pcap","rest","mcp","incident-response","grpc","sniffer","wireshark","cloud-native","sre","ebpf","network-analysis","observability","network-security","network-engineering","root-cause-analysis","network-observability"],
+    defaultBranch: "master", readmePath: "README.md", area: "defense",
+    installCommand: "kubectl apply -f https://raw.githubusercontent.com/kubeshark/kubeshark/master/deploy/manifests/kubeshark.yaml",
+    descriptionCn: "eBPF 驱动的 Kubernetes 网络可观测性。索引 L4/L7 流量，带完整 K8s 上下文，无需密钥即可解密 TLS。同时面向 AI agent（通过 MCP）和人（通过 dashboard）。",
+    whyCn: "K8s 网络可观测性领域的成熟项目，原生支持 MCP，把 eBPF 抓包能力直接接入 LLM。",
+    notable: "Active project, latest release v53.3.0; mature K8s packet capture with first-class MCP support.",
+  },
+  {
+    slug: "wiremcp", kind: "mcp", name: "WireMCP",
+    owner: "0xKoda", repo: "WireMCP",
+    url: "https://github.com/0xKoda/WireMCP",
+    description: "An MCP for WireShark (tshark). Empower LLM's with realtime network traffic analysis capability.",
+    stars: 547, language: "JavaScript",
+    topics: ["mcp","wireshark","tshark","network-analysis","llm"],
+    defaultBranch: "main", readmePath: "README.md", area: "recon",
+    installCommand: "npm install -g wiremcp",
+    descriptionCn: "把 WireShark (tshark) 包成 MCP，让 LLM 实时分析网络流量。",
+    whyCn: "star 数最高的实时抓包 tshark 封装 MCP，MIT 许可，社区非常活跃。",
+    notable: "Highest-starred tshark-wrapping MCP; MIT licensed; very active.",
+  },
+  {
+    slug: "prometheus-mcp-server", kind: "mcp", name: "Prometheus MCP Server",
+    owner: "pab1it0", repo: "prometheus-mcp-server",
+    url: "https://github.com/pab1it0/prometheus-mcp-server",
+    description: "A Model Context Protocol (MCP) server that enables AI agents and LLMs to query and analyze Prometheus metrics through standardized interfaces.",
+    stars: 501, language: "Python",
+    topics: ["devops","ai","mcp","prometheus","llm","model-context-protocol"],
+    defaultBranch: "main", readmePath: "README.md", area: "incident",
+    installCommand: "pip install prometheus-mcp-server",
+    descriptionCn: "通过标准化接口，让 AI agent / LLM 查询和分析 Prometheus 指标。",
+    whyCn: "star 数最高的 Prometheus MCP server（501★），Python 实现，已发布 ghcr.io 容器镜像。",
+    notable: "Higher-starred community Prometheus MCP, Python, with v1.6.1, MIT, container image on ghcr.io.",
+  },
+  {
+    slug: "netbox-mcp-server", kind: "mcp", name: "NetBox MCP Server",
+    owner: "netboxlabs", repo: "netbox-mcp-server",
+    url: "https://github.com/netboxlabs/netbox-mcp-server",
+    description: "Model Context Protocol (MCP) server for read-only interaction with NetBox data in LLMs.",
+    stars: 204, language: "Python",
+    topics: ["mcp","netbox","mcp-server"],
+    defaultBranch: "main", readmePath: "README.md", area: "compliance",
+    installCommand: "uv run netbox-mcp-server",
+    descriptionCn: "NetBox 的只读 MCP server，让 LLM 查询 NetBox 网络源数据（IPAM、设备、连接）。",
+    whyCn: "NetBox Labs 官方维护，是网络拓扑/资产的权威来源。",
+    notable: "Maintained by NetBox Labs (the upstream vendor), so authoritative.",
+  },
+  {
+    slug: "sharkmcp", kind: "mcp", name: "SharkMCP",
+    owner: "weirdmachine64", repo: "SharkMCP",
+    url: "https://github.com/weirdmachine64/SharkMCP",
+    description: "A swiss-knife MCP server for analysing PCAP files.",
+    stars: 72, language: "Python",
+    topics: ["mcp","traffic-analysis","wireshark","ctf"],
+    defaultBranch: "main", readmePath: "README.md", area: "recon",
+    installCommand: "pip install sharkmcp",
+    descriptionCn: "分析 PCAP 文件的 MCP 万能瑞士军刀（通过 Wireshark 的 sharkd 接口）。",
+    whyCn: "离线抓包分析，与实时抓包 WireMCP 互补，CTF 场景很常用。",
+    notable: "Exposes Wireshark's `sharkd` programmatically; distinct from WireMCP's `tshark` wrap.",
+  },
+  {
+    slug: "domain-mcp", kind: "mcp", name: "domain-mcp",
+    owner: "rinadelph", repo: "domain-mcp",
+    url: "https://github.com/rinadelph/domain-mcp",
+    description: "MCP server for domain research - WHOIS, DNS, SSL certs, expired domains. No API keys needed.",
+    stars: 59, language: "Python",
+    topics: ["mcp","domain","whois","dns","ssl","recon"],
+    defaultBranch: "main", readmePath: "README.md", area: "recon",
+    installCommand: "uvx domain-mcp",
+    descriptionCn: "域名调研 MCP：WHOIS / DNS / SSL 证书 / 过期域名，无需任何 API key。",
+    whyCn: "MIT 协议，无 API key（用 RDAP + Cloudflare DoH + crt.sh），开箱即用。",
+    notable: "MIT, no API keys (uses RDAP + Cloudflare DoH + crt.sh).",
+  },
+  {
+    slug: "itmcp", kind: "mcp", name: "itmcp",
+    owner: "andrewhopper", repo: "itmcp",
+    url: "https://github.com/andrewhopper/itmcp",
+    description: "MCP to provide secure IT tools for AI network troubleshooting (remote ssh, ping, nslookup, etc).",
+    stars: 16, language: "Python",
+    topics: ["mcp","network-troubleshooting","ssh","ping","nslookup","dig","tcpdump"],
+    defaultBranch: "main", readmePath: "README.md", area: "recon",
+    installCommand: "pip install itmcp",
+    descriptionCn: "AI 网络排查的 IT 基础工具 MCP：SSH / ping / nslookup / dig / tcpdump。",
+    whyCn: "填补了 IT 基础排查 MCP 的空白（小项目但定位精准）。",
+    notable: "Small but well-scoped; fills the IT-troubleshooting niche.",
+  },
+  // ---- Skill ----
+  {
+    slug: "devops-security-agent-skills", kind: "skill", name: "DevOps & Security Agent Skills",
+    owner: "BagelHole", repo: "DevOps-Security-Agent-Skills",
+    url: "https://github.com/BagelHole/DevOps-Security-Agent-Skills",
+    description: "Agent-ready DevOps, security, infrastructure, and compliance knowledge base with 80+ skills across Kubernetes, Terraform, AWS/Azure/GCP, AI platform operations, container hardening, SOC2/ISO27001, and incident response — plus ready-to-run scripts, templates, and playbooks.",
+    stars: 41, language: "Shell",
+    topics: ["docker","kubernetes","aws","security","devops","terraform","infrastructure-as-code","compliance","sre","cheatsheets","ai-agents","agentic-ai","agent-skills"],
+    defaultBranch: "main", readmePath: "README.md", area: "general",
+    installCommand: "克隆后放入 .claude/skills/ 或项目 skills 目录",
+    descriptionCn: "面向 AI agent 的 DevOps / 安全 / 基础设施 / 合规知识库。含 80+ 个 Skill，覆盖 Kubernetes、Terraform、AWS/Azure/GCP、SOC2/ISO27001、事件响应，并附可运行的脚本、模板和 playbook。",
+    whyCn: "我们规模下唯一的 Skill 仓库，覆盖 K8s / Terraform / 合规 / IR 等广度。",
+    notable: "Only skills repo at our scale; covers K8s/Terraform/compliance/IR.",
+  },
+  {
+    slug: "awesome-sre-skills", kind: "skill", name: "awesome-sre-skills",
+    owner: "sinzin91", repo: "awesome-sre-skills",
+    url: "https://github.com/sinzin91/awesome-sre-skills",
+    description: "A curated list of AI agent skills for Site Reliability Engineering — monitoring, incident response, observability, and infrastructure.",
+    stars: 7, language: null,
+    topics: ["awesome","incident-response","awesome-list","sre","observability","ai-agents"],
+    defaultBranch: "main", readmePath: "README.md", area: "general",
+    descriptionCn: "面向 SRE 场景的 AI agent Skill 精选清单（监控 / IR / 可观测性 / 基础设施）。",
+    whyCn: "CC0-1.0 协议的精选索引，用于发现更多 SRE / 观测类 Skill。",
+    notable: "CC0-1.0; last updated 2026-07-04; matches the awesome-list pattern.",
+  },
+  // ---- Agent ----
+  {
+    slug: "mutil-rag-agent", kind: "agent", name: "multi-rag-agent",
+    owner: "Kkkirito-123", repo: "mutil-rag-agent",
+    url: "https://github.com/Kkkirito-123/mutil-rag-agent",
+    description: "An improved multi-agent AIOps and RAG platform for OnCall troubleshooting, featuring LangGraph-based diagnosis workflows, Milvus vector search, MCP tool integration, Prometheus alert knowledge, and sanitized configuration for safe public deployment.",
+    stars: 107, language: "Python",
+    topics: ["aiops","multi-agent","rag","langgraph","incident-response","oncall"],
+    defaultBranch: "main", readmePath: "README.md", area: "incident",
+    installCommand: "docker compose up -d",
+    descriptionCn: "多 agent AIOps + RAG 平台，专为 on-call 故障排查设计：LangGraph 编排的诊断流、Milvus 向量检索、MCP 工具集成、Prometheus 告警知识库，配置脱敏可公开部署。",
+    whyCn: "star 最高的 AIOps / IR agent（107★），LangGraph + RAG + MCP 组合最完整。",
+    notable: "Highest-starred agent among candidates; V3 with fast/deep dual-mode diagnosis.",
+  },
+  {
+    slug: "iras", kind: "agent", name: "IRAS",
+    owner: "krishnashakula", repo: "IRAS",
+    url: "https://github.com/krishnashakula/IRAS",
+    description: "Autonomous AI agent for incident response — triage, RCA, remediation, post-mortem, with human approval.",
+    stars: 7, language: "Python",
+    topics: ["python","devops","ai","incident-response","on-call","sre","agents","observability","fastapi","anthropic","langgraph","pydantic-ai"],
+    defaultBranch: "master", readmePath: "README.md", area: "incident",
+    installCommand: "pip install -r requirements.txt && docker compose up postgres && uvicorn app.main:app",
+    descriptionCn: "面向事件响应的自主 AI agent：分诊、根因分析、修复、事后复盘，关键步骤带人工审批。",
+    whyCn: "9 节点 LangGraph 流程 + 292 测试覆盖 + 持久化 checkpoint + 硬编码不变量（不靠 prompt），是 IR 领域最严谨的设计。",
+    notable: "Cleanest scope (9-node LangGraph pipeline, 292 tests/99% coverage, durable checkpointing, hard-coded invariants).",
   },
 ];

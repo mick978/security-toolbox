@@ -5,8 +5,8 @@ import {
   agentProjects,
   projectBySlug,
   type GitHubProject,
-  fetchReadme,
 } from "@/lib/github-projects";
+import { fetchReadme } from "@/lib/github-projects.server";
 import { ProjectDetail } from "@/components/project-detail";
 
 export const revalidate = 86400;
