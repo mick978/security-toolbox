@@ -15,12 +15,12 @@ function blobBase(p: GitHubProject): string {
   return `https://github.com/${p.owner}/${p.repo}/blob/${p.defaultBranch}/`;
 }
 
-function resolveAsset(p: GitHubProject, url: string): string {
+function resolveAsset(p: GitHubProject, url: string, base: string = rawBase(p)): string {
   if (!url) return url;
   if (/^(https?:|data:|mailto:|#|\/\/)/i.test(url)) return url;
   if (url.startsWith("/")) return blobBase(p) + url.replace(/^\/+/, "");
   // treat as relative to repo root
-  return rawBase(p) + url.replace(/^\.\//, "");
+  return base + url.replace(/^\.\//, "");
 }
 
 export function Markdown({ source, project }: MarkdownProps) {
@@ -36,7 +36,7 @@ export function Markdown({ source, project }: MarkdownProps) {
         remarkPlugins={[remarkGfm]}
         components={{
           a: ({ href, children }) => (
-            <a href={href ? resolveAsset(project, href) : undefined} target="_blank" rel="noopener noreferrer">
+            <a href={href ? resolveAsset(project, href, blobBase(project)) : undefined} target="_blank" rel="noopener noreferrer">
               {children}
             </a>
           ),
