@@ -28,14 +28,18 @@ const PUBLIC_PREFIXES = [
 export async function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
 
-  // 1) Whitelist exact paths
+  // 1) Whitelist exact paths (also set no-store so users never see stale redirects)
   if (PUBLIC_PATHS.includes(pathname)) {
-    return NextResponse.next();
+    const res = NextResponse.next();
+    res.headers.set("Cache-Control", "no-store, must-revalidate");
+    return res;
   }
 
   // 2) Whitelist prefixes (so /mcp/<slug>, /agents/<slug> are public)
   if (PUBLIC_PREFIXES.some((p) => pathname.startsWith(p))) {
-    return NextResponse.next();
+    const res = NextResponse.next();
+    res.headers.set("Cache-Control", "no-store, must-revalidate");
+    return res;
   }
 
   // 3) Next.js internals + static assets (defensive — matcher already filters most)
