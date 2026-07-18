@@ -42,3 +42,4 @@ coverage/
 # reference screenshots from prior iterations
 ao-*.png
 sec-toolbox-*.png
+.env*

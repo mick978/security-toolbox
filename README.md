@@ -1,14 +1,13 @@
 # SecToolbox · 网络安全排查工具速查
 
-[![Live](https://img.shields.io/badge/live-47.109.63.111%3A9119-2ea44f?style=flat-square)](http://47.109.63.111:9119/)
-[![Tools](https://img.shields.io/badge/tools-51-blue?style=flat-square)](http://47.109.63.111:9119/tools)
-[![Cheatsheets](https://img.shields.io/badge/cheatsheets-42-purple?style=flat-square)](http://47.109.63.111:9119/cheatsheet)
+[![Tools](https://img.shields.io/badge/tools-51-blue?style=flat-square)](#内容)
+[![Cheatsheets](https://img.shields.io/badge/cheatsheets-42-purple?style=flat-square)](#内容)
 [![Next.js](https://img.shields.io/badge/Next.js-16-black?style=flat-square&logo=next.js)](https://nextjs.org)
 [![TypeScript](https://img.shields.io/badge/TypeScript-strict-3178c6?style=flat-square&logo=typescript)](https://www.typescriptlang.org)
 [![License](https://img.shields.io/badge/license-MIT-green?style=flat-square)](#license)
 
 > 面向 **红队 / 蓝队 / DFIR / DevOps / SRE / 安全工程师** 的一站式排查手册 — 51 个工具、8 大分类、42 个实战场景速查。
-> **线上**：http://47.109.63.111:9119/
+> 本地运行：`npm run dev` → http://localhost:3000
 
 ## 三大 AI Agent 生态
 

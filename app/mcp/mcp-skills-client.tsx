@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
+import { useSearchParams, useRouter, usePathname } from "next/navigation";
 import Link from "next/link";
 import * as Icons from "lucide-react";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
@@ -19,7 +20,20 @@ import { Search, X, Wrench, Code, Star, Github, ExternalLink } from "lucide-reac
 const areas = securityAreas.filter((a) => a.slug !== "general");
 
 export default function McpSkillsClient() {
-  const [activeTab, setActiveTab] = useState<"mcp" | "skills">("mcp");
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const initialTab: "mcp" | "skills" =
+    searchParams.get("tab") === "skills" ? "skills" : "mcp";
+  const [activeTab, setActiveTab] = useState<"mcp" | "skills">(initialTab);
+
+  // Keep state in sync if the user navigates with browser back/forward or
+  // arrives on /mcp?tab=skills after clicking the detail back-link.
+  useEffect(() => {
+    const t = searchParams.get("tab");
+    if (t === "skills") setActiveTab("skills");
+    else setActiveTab("mcp");
+  }, [searchParams]);
   const [cat, setCat] = useState<SecurityArea | "all">("all");
   const [q, setQ] = useState("");
 
@@ -93,7 +107,11 @@ export default function McpSkillsClient() {
       {/* Tabs */}
       <div className="flex gap-2 mb-6">
         <button
-          onClick={() => { setActiveTab("mcp"); setCat("all"); }}
+          onClick={() => {
+            setActiveTab("mcp");
+            setCat("all");
+            router.replace(pathname, { scroll: false });
+          }}
           className={cn(
             "px-4 py-2 rounded-lg text-sm font-medium transition-colors",
             activeTab === "mcp" ? "bg-primary text-primary-foreground" : "bg-secondary/30 text-muted-foreground hover:text-foreground"
@@ -103,7 +121,11 @@ export default function McpSkillsClient() {
           MCP 工具 ({mcpProjects.length})
         </button>
         <button
-          onClick={() => { setActiveTab("skills"); setCat("all"); }}
+          onClick={() => {
+            setActiveTab("skills");
+            setCat("all");
+            router.replace(`${pathname}?tab=skills`, { scroll: false });
+          }}
           className={cn(
             "px-4 py-2 rounded-lg text-sm font-medium transition-colors",
             activeTab === "skills" ? "bg-primary text-primary-foreground" : "bg-secondary/30 text-muted-foreground hover:text-foreground"

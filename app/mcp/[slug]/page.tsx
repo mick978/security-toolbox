@@ -21,9 +21,21 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   const { slug } = await params;
   const p = projectBySlug(slug);
   if (!p || (p.kind !== "mcp" && p.kind !== "skill")) return { title: "未找到" };
+  const ogTitle = `${p.name} · ${p.kind === "skill" ? "Agent Skill" : "MCP"}`;
   return {
     title: `${p.name} · ${p.kind === "skill" ? "Agent Skill" : "MCP"} · SecToolbox`,
     description: p.description,
+    openGraph: {
+      title: ogTitle,
+      description: p.description,
+      type: "article",
+      url: p.url,
+    },
+    twitter: {
+      card: "summary_large_image",
+      title: ogTitle,
+      description: p.description,
+    },
   };
 }
 

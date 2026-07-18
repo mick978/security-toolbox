@@ -20,7 +20,22 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   const { slug } = await params;
   const p = projectBySlug(slug);
   if (!p || p.kind !== "agent") return { title: "未找到" };
-  return { title: `${p.name} · AI Agent · SecToolbox`, description: p.description };
+  const ogTitle = `${p.name} · AI Agent`;
+  return {
+    title: `${p.name} · AI Agent · SecToolbox`,
+    description: p.description,
+    openGraph: {
+      title: ogTitle,
+      description: p.description,
+      type: "article",
+      url: p.url,
+    },
+    twitter: {
+      card: "summary_large_image",
+      title: ogTitle,
+      description: p.description,
+    },
+  };
 }
 
 export default async function AgentDetail({ params }: { params: Promise<{ slug: string }> }) {
