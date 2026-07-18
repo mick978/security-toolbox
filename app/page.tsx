@@ -7,7 +7,7 @@ import { executorBySlug, EXECUTOR_SLUGS } from "@/lib/executors";
 import { securityAgents, agentCategories } from "@/lib/agents";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { ArrowRight, Terminal, Zap, Shield, ScanLine, ShieldAlert, Swords, Search, Globe, BookOpen, Bot } from "lucide-react";
+import { ArrowRight, Terminal, Zap, Shield, ScanLine, ShieldAlert, Swords, Search, Globe, BookOpen, Bot, Network } from "lucide-react";
 
 export default function HomePage() {
   const stats = [
@@ -256,6 +256,44 @@ export default function HomePage() {
               </Link>
             );
           })}
+        </div>
+      </section>
+
+      {/* Network Troubleshooting Section */}
+      <section className="container pb-24">
+        <div className="flex items-end justify-between mb-8">
+          <div>
+            <h2 className="text-2xl font-bold flex items-center gap-2">
+              <Network className="h-6 w-6 text-primary" />
+              <span>网络自动化排查</span>
+            </h2>
+            <p className="text-sm text-muted-foreground mt-1">
+              K8s 可观测性 / 抓包分析 / Prometheus · NetBox / AIOps 智能诊断 — 11 个经过 GitHub API 验证的真实工具
+            </p>
+          </div>
+          <Link href="/network" className="text-sm text-primary hover:underline">
+            查看全部 →
+          </Link>
+        </div>
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+          <Link href="/network" className="group md:col-span-2 lg:col-span-3">
+            <Card className="h-full transition-all hover:border-primary/60 hover:shadow-lg hover:shadow-primary/5 bg-gradient-to-br from-primary/5 to-transparent">
+              <CardHeader>
+                <div className="flex items-center gap-3">
+                  <div className="flex items-center justify-center w-12 h-12 rounded-lg bg-primary/10">
+                    <Network className="h-6 w-6 text-primary" />
+                  </div>
+                  <div>
+                    <CardTitle className="text-lg">网络排查工具集</CardTitle>
+                    <CardDescription className="mt-1">
+                      Kubeshark (eBPF K8s 抓包) · WireMCP (实时 tshark) · Prometheus / NetBox MCP · multi-rag-agent (AIOps) — 覆盖可观测性、应急响应、IT 基础排查
+                    </CardDescription>
+                  </div>
+                  <ArrowRight className="h-5 w-5 text-primary ml-auto group-hover:translate-x-1 transition-transform" />
+                </div>
+              </CardHeader>
+            </Card>
+          </Link>
         </div>
       </section>
     </div>
