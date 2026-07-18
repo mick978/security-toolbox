@@ -5,3 +5,4 @@
 export { agentProjects as securityAgents } from "@/lib/github-projects";
 export { securityAreas as agentCategories } from "@/lib/github-projects";
 export type { SecurityArea as AgentCategory } from "@/lib/github-projects";
+export type { GitHubProject as SecurityAgent } from "@/lib/github-projects";
