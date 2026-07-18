@@ -1,37 +1,61 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { verifyTokenEdge, AUTH_COOKIE_NAME } from "./lib/auth-edge";
 
-// 白名单：登录页 / 登录 API / 静态资源
-const PUBLIC_PATHS = ["/login", "/api/auth/login", "/api/auth/logout"];
+// === Whitelist ===
+// Always-public paths (no login required)
+const PUBLIC_PATHS = [
+  // Login and auth API
+  "/login",
+  "/api/auth/login",
+  "/api/auth/logout",
+  // Showcase pages (read-only MCP / Skills / Agents / Network catalog — public)
+  "/",
+  "/mcp",
+  "/agents",
+  "/network",
+  "/sitemap.xml",
+  "/robots.txt",
+  "/case-images",
+];
+
+// Path-prefix patterns that are public (any sub-path under these is too)
+const PUBLIC_PREFIXES = [
+  // Skill catalog lives under /mcp?tab=skills and detail at /mcp/[slug]
+  "/mcp/",
+  "/agents/",
+];
 
 export async function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
 
-  // 白名单直接放行
-  if (PUBLIC_PATHS.some((p) => pathname === p || pathname.startsWith(p + "/"))) {
+  // 1) Whitelist exact paths
+  if (PUBLIC_PATHS.includes(pathname)) {
     return NextResponse.next();
   }
 
-  // 静态资源、Next.js 内部路径直接放行（matcher 已过滤大部分，这里兜底）
+  // 2) Whitelist prefixes (so /mcp/<slug>, /agents/<slug> are public)
+  if (PUBLIC_PREFIXES.some((p) => pathname.startsWith(p))) {
+    return NextResponse.next();
+  }
+
+  // 3) Next.js internals + static assets (defensive — matcher already filters most)
   if (
     pathname.startsWith("/_next") ||
     pathname.startsWith("/favicon") ||
-    pathname.startsWith("/case-images") ||
     /\.(png|jpe?g|gif|svg|ico|webp|css|js|map|txt|xml)$/i.test(pathname)
   ) {
     return NextResponse.next();
   }
 
+  // 4) Anything else requires auth
   const token = req.cookies.get(AUTH_COOKIE_NAME)?.value;
   const user = await verifyTokenEdge(token);
   if (user) return NextResponse.next();
 
-  // API 请求返回 401 JSON
   if (pathname.startsWith("/api/")) {
     return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   }
 
-  // 页面请求跳转到 /login?next=<原路径>
   const url = req.nextUrl.clone();
   url.pathname = "/login";
   url.searchParams.set("next", pathname + req.nextUrl.search);
@@ -40,7 +64,7 @@ export async function middleware(req: NextRequest) {
 
 export const config = {
   matcher: [
-    // 匹配所有路径，但排除 Next.js 内部和静态文件
+    // Match all paths, but exclude Next.js internals and static files.
     "/((?!_next/static|_next/image|favicon.ico).*)",
   ],
 };
