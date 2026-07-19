@@ -1,9 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Shield, Search, BookOpenText, Home, Globe, Moon, Sun, Github, Star, Bot, Wrench } from "lucide-react";
+import { Shield, Search, BookOpenText, Home, Globe, Moon, Sun, Github, Star, Bot, Wrench, Menu, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { CommandMenu } from "@/components/command-menu";
 
@@ -16,16 +16,52 @@ const nav = [
   { href: "/ip-intel", label: "IP 情报", icon: Globe },
 ];
 
+const THEME_KEY = "sectoolbox.theme";
+
 export function Header() {
   const pathname = usePathname();
   const [cmdOpen, setCmdOpen] = useState(false);
-  const [theme, setTheme] = useState<"dark" | "light">("dark");
+  const [menuOpen, setMenuOpen] = useState(false);
+  // Track an explicit user choice; `null` until we read localStorage so we
+  // don't paint the wrong icon during hydration.
+  const [theme, setTheme] = useState<"dark" | "light" | null>(null);
+
+  // Sync from localStorage on mount and apply to <html>.
+  useEffect(() => {
+    const saved = (typeof window !== "undefined" && window.localStorage.getItem(THEME_KEY)) as
+      | "dark"
+      | "light"
+      | null;
+    const initial: "dark" | "light" = saved ?? "dark";
+    setTheme(initial);
+    document.documentElement.classList.toggle("dark", initial === "dark");
+  }, []);
 
   const toggleTheme = () => {
     const next = theme === "dark" ? "light" : "dark";
     setTheme(next);
     document.documentElement.classList.toggle("dark", next === "dark");
+    try {
+      window.localStorage.setItem(THEME_KEY, next);
+    } catch {
+      /* ignore quota errors */
+    }
   };
+
+  // Close the drawer whenever we route to a new page.
+  useEffect(() => {
+    setMenuOpen(false);
+  }, [pathname]);
+
+  // Lock body scroll while the drawer is open (mobile only — md+ never opens it).
+  useEffect(() => {
+    if (typeof document === "undefined") return;
+    const html = document.documentElement;
+    html.style.overflow = menuOpen ? "hidden" : "";
+    return () => {
+      html.style.overflow = "";
+    };
+  }, [menuOpen]);
 
   return (
     <>
@@ -44,8 +80,8 @@ export function Header() {
             </div>
           </Link>
 
-          {/* Center Navigation */}
-          <nav className="hidden md:flex items-center gap-1">
+          {/* Center Navigation (desktop) */}
+          <nav className="hidden md:flex items-center gap-1" aria-label="主导航">
             {nav.map((n) => {
               const Icon = n.icon;
               const active = pathname === n.href || (n.href !== "/" && pathname.startsWith(n.href));
@@ -53,14 +89,16 @@ export function Header() {
                 <Link
                   key={n.href}
                   href={n.href}
+                  aria-current={active ? "page" : undefined}
                   className={cn(
-                    "px-3 py-1.5 text-sm rounded-md transition-colors flex items-center gap-1.5",
+                    // Hit-target ≥ 44px via min-h, micro-animation on color/bg only.
+                    "min-h-[44px] inline-flex items-center gap-1.5 px-3 py-1.5 text-sm rounded-md transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60 focus-visible:ring-offset-2 focus-visible:ring-offset-background",
                     active
                       ? "bg-primary/10 text-primary font-medium"
                       : "text-muted-foreground hover:text-foreground hover:bg-secondary/60"
                   )}
                 >
-                  <Icon className="h-3.5 w-3.5" />
+                  <Icon className="h-3.5 w-3.5" aria-hidden="true" />
                   <span>{n.label}</span>
                 </Link>
               );
@@ -73,35 +111,96 @@ export function Header() {
             <button
               type="button"
               onClick={() => setCmdOpen(true)}
-              className="inline-flex items-center justify-center gap-1.5 rounded-md border border-border/60 bg-secondary/40 px-2 py-1.5 text-xs text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors"
+              className="inline-flex min-h-[44px] min-w-[44px] items-center justify-center gap-1.5 rounded-md border border-border/60 bg-secondary/40 px-2 py-1.5 text-xs text-muted-foreground hover:text-foreground hover:bg-secondary transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60 focus-visible:ring-offset-2 focus-visible:ring-offset-background"
               aria-label="打开搜索"
             >
               <Search className="h-3.5 w-3.5" />
               <span className="hidden md:inline">搜索</span>
-              <kbd className="inline-flex rounded bg-background border border-border/60 px-1 py-0.5 text-[10px] font-mono">⌘K</kbd>
+              <kbd className="hidden md:inline-flex rounded bg-background border border-border/60 px-1 py-0.5 text-[10px] font-mono">⌘K</kbd>
             </button>
 
             {/* Theme Toggle */}
             <button
               onClick={toggleTheme}
-              className="inline-flex items-center justify-center rounded-md w-8 h-8 text-muted-foreground hover:text-foreground hover:bg-secondary/60 transition-colors"
-              aria-label="切换主题"
+              disabled={theme === null}
+              className="inline-flex min-h-[44px] min-w-[44px] items-center justify-center rounded-md w-8 h-8 text-muted-foreground hover:text-foreground hover:bg-secondary/60 disabled:opacity-40 transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60 focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+              aria-label={`切换主题（当前：${theme ?? "..."}）`}
             >
-              {theme === "dark" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+              <span className="transition-transform duration-200 hover:rotate-12">
+                {theme === "dark" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+              </span>
             </button>
 
-            {/* GitHub */}
+            {/* GitHub (desktop only — saves space on mobile) */}
             <a
               href="https://github.com"
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex items-center justify-center rounded-md w-8 h-8 text-muted-foreground hover:text-foreground hover:bg-secondary/60 transition-colors"
-              aria-label="GitHub"
+              className="hidden md:inline-flex min-h-[44px] min-w-[44px] items-center justify-center rounded-md w-8 h-8 text-muted-foreground hover:text-foreground hover:bg-secondary/60 transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60 focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+              aria-label="GitHub 仓库"
             >
-              <Github className="h-4 w-4" />
+              <Github className="h-4 w-4" aria-hidden="true" />
             </a>
+
+            {/* Mobile hamburger */}
+            <button
+              type="button"
+              onClick={() => setMenuOpen((v) => !v)}
+              aria-label={menuOpen ? "关闭导航" : "打开导航"}
+              aria-expanded={menuOpen}
+              aria-controls="mobile-nav-drawer"
+              className="md:hidden inline-flex min-h-[44px] min-w-[44px] items-center justify-center rounded-md w-8 h-8 text-muted-foreground hover:text-foreground hover:bg-secondary/60 transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60 focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+            >
+              <span className="transition-transform duration-200" style={{ transform: menuOpen ? "rotate(90deg)" : "rotate(0)" }}>
+                {menuOpen ? <X className="h-4 w-4" /> : <Menu className="h-4 w-4" />}
+              </span>
+            </button>
           </div>
         </div>
+
+        {/* Mobile drawer — slides down under the header on small screens */}
+        {menuOpen && (
+          <nav
+            id="mobile-nav-drawer"
+            className="md:hidden border-t border-border/60 bg-background/95 backdrop-blur animate-in slide-in-from-top-2 fade-in duration-200"
+            aria-label="移动端导航"
+          >
+            <ul className="container py-2 flex flex-col">
+              {nav.map((n) => {
+                const Icon = n.icon;
+                const active = pathname === n.href || (n.href !== "/" && pathname.startsWith(n.href));
+                return (
+                  <li key={n.href}>
+                    <Link
+                      href={n.href}
+                      aria-current={active ? "page" : undefined}
+                      className={cn(
+                        "flex items-center gap-3 min-h-[44px] px-3 py-3 text-sm rounded-md transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60 focus-visible:ring-offset-2 focus-visible:ring-offset-background",
+                        active
+                          ? "bg-primary/10 text-primary font-medium"
+                          : "text-muted-foreground hover:text-foreground hover:bg-secondary/60"
+                      )}
+                    >
+                      <Icon className="h-4 w-4" aria-hidden="true" />
+                      <span>{n.label}</span>
+                    </Link>
+                  </li>
+                );
+              })}
+              <li className="border-t border-border/60 mt-2 pt-2">
+                <a
+                  href="https://github.com"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-3 min-h-[44px] px-3 py-3 text-sm rounded-md text-muted-foreground hover:text-foreground hover:bg-secondary/60 transition-colors duration-200"
+                >
+                  <Github className="h-4 w-4" aria-hidden="true" />
+                  <span>GitHub 仓库</span>
+                </a>
+              </li>
+            </ul>
+          </nav>
+        )}
       </header>
       <CommandMenu open={cmdOpen} onOpenChange={setCmdOpen} />
     </>

@@ -141,14 +141,18 @@ function ProjectCard({ project }: { project: GitHubProject }) {
   const detailHref = project.kind === "agent" ? `/agents/${project.slug}` : `/mcp/${project.slug}`;
 
   return (
-    <Link href={detailHref} className="group">
-      <Card className="h-full hover:border-primary/60 hover:shadow-lg hover:shadow-primary/5 transition-all">
+    <Link
+      href={detailHref}
+      className="group block focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60 focus-visible:ring-offset-2 focus-visible:ring-offset-background rounded-xl"
+      aria-label={`查看 ${project.name}（${kindLabel}）的详细 README`}
+    >
+      <Card className="h-full transition-all duration-200 hover:-translate-y-0.5 hover:border-primary/60 hover:shadow-lg hover:shadow-primary/10 dark:hover:shadow-primary/5">
         <CardHeader>
           <div className="flex items-start justify-between gap-2">
             <CardTitle className="text-base leading-snug">{project.name}</CardTitle>
-            <span className="inline-flex items-center gap-1 text-xs text-muted-foreground shrink-0">
-              <Star className="h-3.5 w-3.5" />
-              {formatStars(project.stars)}
+            <span className="inline-flex items-center gap-1 text-xs text-foreground/80 shrink-0 tabular-nums">
+              <Star className="h-3.5 w-3.5 text-yellow-500 dark:text-yellow-400 fill-yellow-500/20" aria-hidden="true" />
+              <span className="font-semibold">{formatStars(project.stars)}</span>
             </span>
           </div>
           <div className="flex flex-wrap gap-1 mt-1">
@@ -159,17 +163,17 @@ function ProjectCard({ project }: { project: GitHubProject }) {
           <CardDescription className="mt-2 text-xs line-clamp-3">{project.descriptionCn ?? project.description}</CardDescription>
         </CardHeader>
         <CardContent className="pt-0">
-          <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-            <Github className="h-3 w-3" />
-            <span className="font-mono truncate">{project.owner}/{project.repo}</span>
+          <div className="flex items-center gap-1.5 text-xs text-foreground/70 font-mono">
+            <Github className="h-3 w-3 shrink-0" aria-hidden="true" />
+            <span className="truncate">{project.owner}/{project.repo}</span>
           </div>
           {project.installCommand && (
-            <code className="block mt-2 px-2 py-1 rounded bg-secondary/50 border border-border/40 text-[10px] font-mono truncate">
+            <code className="block mt-2 px-2 py-1 rounded bg-secondary/60 border border-border/50 text-[10px] font-mono truncate text-foreground/80">
               {project.installCommand}
             </code>
           )}
-          <div className="mt-3 flex items-center text-xs text-primary opacity-0 group-hover:opacity-100 transition-opacity">
-            查看真实 README <ExternalLink className="h-3 w-3 ml-1" />
+          <div className="mt-3 flex items-center text-xs text-primary opacity-0 -translate-x-1 group-hover:opacity-100 group-hover:translate-x-0 group-focus-visible:opacity-100 group-focus-visible:translate-x-0 transition-all duration-200">
+            查看真实 README <ExternalLink className="h-3 w-3 ml-1" aria-hidden="true" />
           </div>
         </CardContent>
       </Card>
