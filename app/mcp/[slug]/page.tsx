@@ -4,6 +4,7 @@ import { ArrowLeft } from "lucide-react";
 import {
   mcpProjects,
   skillProjects,
+  agentProjects,
   networkProjects,
   projectBySlug,
   type GitHubProject,
@@ -24,7 +25,11 @@ const networkSlugs = new Set(networkProjects.map((p) => p.slug));
 function isListableSlug(slug: string) {
   if (mcpProjects.some((p) => p.slug === slug)) return "mcp";
   if (skillProjects.some((p) => p.slug === slug)) return "skill";
-  if (networkSlugs.has(slug)) return "mcp"; // network MCPs render as MCP kind
+  if (agentProjects.some((p) => p.slug === slug)) return "agent";
+  // Anything else found only in the "networkProjects" bucket (kubeshark,
+  // wiremcp, domain-mcp, ... — and the misfiled skills/agents that ended up
+  // there too) renders as MCP kind, with back-link to /network.
+  if (networkSlugs.has(slug)) return "mcp";
   return undefined;
 }
 

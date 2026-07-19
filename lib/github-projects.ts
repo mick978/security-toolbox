@@ -82,7 +82,13 @@ export function projectBySlug(slug: string): GitHubProject | undefined {
   return (
     mcpProjects.find((p) => p.slug === slug) ||
     skillProjects.find((p) => p.slug === slug) ||
-    agentProjects.find((p) => p.slug === slug)
+    agentProjects.find((p) => p.slug === slug) ||
+    // The networkProjects block on disk actually holds a mixed bag — most
+    // entries are network MCPs (kubeshark, wiremcp, ...), but two skills
+    // (devops-security-agent-skills, awesome-sre-skills) and two agents
+    // (multi-rag-agent, IRAS) were appended there too. Search it as a
+    // fallback so /mcp/<slug> and /agents/<slug> can resolve those entries.
+    networkProjects.find((p) => p.slug === slug)
   );
 }
 
