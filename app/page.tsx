@@ -42,7 +42,7 @@ export default function HomePage() {
           </p>
 
           {/* Warning */}
-          <div className="mt-4 rounded-md border border-amber-500/40 bg-amber-500/10 px-4 py-2.5 text-xs text-amber-200 max-w-2xl">
+          <div className="mt-4 rounded-md border border-amber-500/60 dark:border-amber-500/40 bg-amber-100/70 dark:bg-amber-500/10 px-4 py-2.5 text-xs text-amber-900 dark:text-amber-200 max-w-2xl">
             ⚠️ 攻击性工具（信息收集 / 漏洞利用 / C2 / 口令攻击）<span className="font-medium">仅限用于授权渗透测试、CTF、自建靶场或学术研究</span>。禁止未授权使用。使用者需自行承担法律责任。
           </div>
 
@@ -103,10 +103,10 @@ export default function HomePage() {
 
       {/* Red Team / Pentest Section */}
       <section className="container pt-8 pb-4">
-        <div className="rounded-lg border border-amber-500/40 bg-amber-500/5 p-4 text-sm text-amber-200/90 flex items-start gap-3">
-          <ShieldAlert className="h-5 w-5 shrink-0 text-amber-400 mt-0.5" />
+        <div className="rounded-lg border border-amber-500/60 dark:border-amber-500/40 bg-amber-100/70 dark:bg-amber-500/5 p-4 text-sm text-amber-900 dark:text-amber-200/90 flex items-start gap-3">
+          <ShieldAlert className="h-5 w-5 shrink-0 text-amber-700 dark:text-amber-400 mt-0.5" />
           <div>
-            <div className="font-semibold text-amber-300">⚠ 授权测试专用</div>
+            <div className="font-semibold text-amber-900 dark:text-amber-300">⚠ 授权测试专用</div>
             以下工具仅限用于 <strong>自建靶场 / CTF / 红队授权项目</strong>；未授权扫描或攻击真实系统属违法行为，一切法律责任由使用者自负。
           </div>
         </div>
