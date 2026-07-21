@@ -16,20 +16,24 @@ type Item = {
   label: string;
   type: "tool" | "cheat";
   desc?: string;
+  haystack: string; // precomputed lowercase + pinyin initials
 };
 
 function getItems(): Item[] {
+  const { tokensFor } = require("@/lib/search") as typeof import("@/lib/search");
   const toolItems: Item[] = tools.map((t) => ({
     slug: t.slug,
     label: t.name,
     type: "tool" as const,
     desc: t.tagline,
+    haystack: tokensFor(t.name, t.tagline, t.description, t.tags),
   }));
   const cheatItems: Item[] = cheatsheets.map((c) => ({
     slug: c.slug,
     label: c.title,
     type: "cheat" as const,
     desc: c.summary,
+    haystack: tokensFor(c.title, c.summary, c.tags),
   }));
   return [...toolItems, ...cheatItems];
 }
@@ -41,13 +45,9 @@ export function CommandMenu({ open, onOpenChange }: { open: boolean; onOpenChang
   const router = useRouter();
 
   const items = getItems();
+  const { matches } = require("@/lib/search") as typeof import("@/lib/search");
   const filtered = query.trim()
-    ? items.filter(
-        (i) =>
-          i.label.toLowerCase().includes(query.toLowerCase()) ||
-          i.slug.toLowerCase().includes(query.toLowerCase()) ||
-          (i.desc && i.desc.toLowerCase().includes(query.toLowerCase()))
-      )
+    ? items.filter((i) => matches(query, i.haystack))
     : items;
 
   const grouped = filtered.reduce<Record<string, Item[]>>((acc, item) => {

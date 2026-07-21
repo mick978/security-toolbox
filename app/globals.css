@@ -249,4 +249,80 @@
       transform: none !important;
     }
   }
+
+  /* Print stylesheet — used by users who want a paper copy of a SOP
+   * or a tool install recipe. We strip everything that is purely
+   * navigation / chrome / decoration, and show only the content
+   * itself in a monospaced + dark-on-white palette so the printed
+   * page is readable on paper. The intent is "I want this on a
+   * desk reference", not "this is a finished PDF" — so we keep
+   * section headings but drop shadows and gradients. */
+  @media print {
+    /* Hide chrome */
+    header.sticky,
+    nav,
+    aside[aria-label="本页目录"],
+    footer,
+    .no-print,
+    [data-accent] [aria-hidden="true"],
+    button,
+    [role="dialog"] {
+      display: none !important;
+    }
+
+    /* Reset backdrop layers from ExploreHero / cards */
+    .hero-gradient-animated,
+    .grid-bg {
+      display: none !important;
+    }
+
+    body {
+      background: #ffffff !important;
+      color: #111827 !important;
+    }
+
+    a {
+      color: #1e3a8a !important;
+      text-decoration: underline;
+    }
+
+    /* Article / SOP block stays, but drop shadows & gradients */
+    article,
+    section.container {
+      max-width: 100% !important;
+    }
+
+    /* Code blocks — make them monospace and ensure they wrap on paper */
+    pre, code {
+      background: #f3f4f6 !important;
+      color: #1f2937 !important;
+      border: 1px solid #d1d5db !important;
+      padding: 6px 8px !important;
+      border-radius: 4px !important;
+      font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace !important;
+      white-space: pre-wrap !important;
+    }
+
+    /* Trim hover lifts / animations off */
+    *, *::before, *::after {
+      transition: none !important;
+      animation: none !important;
+    }
+
+    /* Show URL after links in print, since colors are stripped. */
+    a[href]:not([href^="#"])::after {
+      content: " (" attr(href) ")";
+      font-size: 90%;
+      color: #4b5563 !important;
+    }
+
+    /* Cards: drop borders + bg, keep content readable */
+    .rounded-xl,
+    .rounded-lg,
+    .rounded-md {
+      border: 1px solid #e5e7eb !important;
+      background: #ffffff !important;
+      box-shadow: none !important;
+    }
+  }
 }

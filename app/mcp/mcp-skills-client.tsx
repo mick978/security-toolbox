@@ -22,6 +22,7 @@ import { ExploreCard } from "@/components/explore-card";
 import { ExploreHero, ExploreHeroBadge } from "@/components/explore-hero";
 import { ExploreSearch } from "@/components/explore-search";
 import { ExploreSection } from "@/components/explore-section";
+import { EmptyResults } from "@/components/empty-results";
 
 export default function McpSkillsClient() {
   const router = useRouter();
@@ -123,9 +124,16 @@ export default function McpSkillsClient() {
       <section className="container pb-section">
         <div className="space-y-16">
           {byArea.length === 0 && (
-            <div className="rounded-lg border border-dashed border-border/60 p-16 text-center text-muted-foreground">
-              没有匹配的项目，换个关键词试试。
-            </div>
+            <EmptyResults
+              title="没找到匹配项目"
+              hint="MCP 工具多用于 IDE / CLI / Agent 集成。试试按领域或切换 tabs（MCP / Skills）。"
+              suggestions={[
+                { label: "MCP 工具",   href: "/mcp?tab=mcp" },
+                { label: "Skills 技能", href: "/mcp?tab=skills" },
+                { label: "信息收集",   href: "/mcp?tab=mcp&q=recon" },
+                { label: "防御检测",   href: "/mcp?tab=mcp&q=defense" },
+              ]}
+            />
           )}
           {byArea.map(({ area, projects }) => (
             <ExploreSection

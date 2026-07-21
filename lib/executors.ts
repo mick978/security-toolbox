@@ -251,6 +251,217 @@ export const EXECUTORS: ExecutorSpec[] = [
     ],
     buildArgs: (f) => ["-z", "-v", "-w", "3", f.host, f.port],
   },
+
+  // --- 第二批白名单：与网络安全排查相关的只读 / 无副作用工具 ---
+  {
+    slug: "dig-trace",
+    binary: "dig",
+    description: "DNS 跟踪（从根到权威逐级）",
+    timeoutMs: 15000,
+    argsTemplate: [
+      { name: "domain", label: "域名", type: "domain", required: true, placeholder: "example.com" },
+    ],
+    buildArgs: (f) => ["+trace", f.domain],
+  },
+  {
+    slug: "dig-txt",
+    binary: "dig",
+    description: "查询 TXT 记录（SPF / DKIM / 验证密钥）",
+    timeoutMs: 8000,
+    argsTemplate: [
+      { name: "domain", label: "域名", type: "domain", required: true, placeholder: "example.com" },
+      { name: "prefix", label: "前缀（可选）", type: "domain", required: false, placeholder: "_dmarc" },
+    ],
+    buildArgs: (f) => {
+      const d = f.prefix ? `${f.prefix}.${f.domain}` : f.domain;
+      return ["TXT", "+short", d];
+    },
+  },
+  {
+    slug: "dig-mx",
+    binary: "dig",
+    description: "查询 MX 记录（邮件服务器）",
+    timeoutMs: 8000,
+    argsTemplate: [
+      { name: "domain", label: "域名", type: "domain", required: true, placeholder: "example.com" },
+    ],
+    buildArgs: (f) => ["MX", "+short", f.domain],
+  },
+  {
+    slug: "whois-ip",
+    binary: "whois",
+    description: "查询 IP 的 WHOIS 注册信息",
+    timeoutMs: 12000,
+    argsTemplate: [
+      { name: "ip", label: "IP", type: "ip", required: true, placeholder: "8.8.8.8" },
+    ],
+    buildArgs: (f) => [f.ip],
+  },
+  {
+    slug: "host-dns",
+    binary: "host",
+    description: "DNS 查询（替代 dig，输出简洁）",
+    timeoutMs: 8000,
+    argsTemplate: [
+      { name: "host", label: "主机", type: "host", required: true, placeholder: "example.com" },
+    ],
+    buildArgs: (f) => [f.host],
+  },
+  {
+    slug: "nslookup-record",
+    binary: "nslookup",
+    description: "查询指定记录类型（ANY / A / AAAA / CNAME）",
+    timeoutMs: 8000,
+    argsTemplate: [
+      { name: "host", label: "主机", type: "host", required: true, placeholder: "example.com" },
+      {
+        name: "type", label: "记录类型", type: "enum", required: true,
+        options: ["A", "AAAA", "CNAME", "MX", "NS", "TXT", "ANY"],
+        default: "A",
+      },
+    ],
+    buildArgs: (f) => ["-query=" + f.type, f.host],
+  },
+  {
+    slug: "curl-headers",
+    binary: "curl",
+    description: "只看 HTTP 响应头（HEAD-like）",
+    timeoutMs: 12000,
+    argsTemplate: [
+      { name: "url", label: "URL", type: "url", required: true, placeholder: "https://example.com" },
+    ],
+    buildArgs: (f) => ["-sSI", "-A", "Mozilla/5.0 SecToolbox", f.url],
+  },
+  {
+    slug: "curl-redirect-trace",
+    binary: "curl",
+    description: "查看完整重定向链（--write-out）",
+    timeoutMs: 15000,
+    argsTemplate: [
+      { name: "url", label: "URL", type: "url", required: true, placeholder: "https://bit.ly/example" },
+    ],
+    buildArgs: (f) => [
+      "-sSL", "-A", "Mozilla/5.0 SecToolbox",
+      "-w", "%{url_effective} -> HTTP %{http_code} (%{time_total}s)\n",
+      "-o", "/dev/null", f.url,
+    ],
+  },
+  {
+    slug: "wget-save",
+    binary: "wget",
+    description: "下载页面到 /tmp（只读 GET）",
+    timeoutMs: 20000,
+    argsTemplate: [
+      { name: "url", label: "URL", type: "url", required: true, placeholder: "https://example.com" },
+    ],
+    buildArgs: (f) => ["-q", "-O", "/tmp/sectoolbox-dl", "-U", "SecToolbox/1.0", f.url],
+  },
+  {
+    slug: "openssl-sni",
+    binary: "openssl",
+    description: "TLS SNI 握手 — 读取证书 + ALPN + CT",
+    timeoutMs: 15000,
+    argsTemplate: [
+      { name: "host", label: "主机", type: "host", required: true, placeholder: "example.com" },
+      { name: "port", label: "端口", type: "port", required: false, placeholder: "443", default: "443" },
+    ],
+    buildArgs: (f) => [
+      "s_client", "-servername", f.host, "-connect", `${f.host}:${f.port}`,
+      "-brief", "-no_ign_eof",
+    ],
+  },
+  {
+    slug: "openssl-ciphers",
+    binary: "openssl",
+    description: "列服务器支持的 TLS 加密套件",
+    timeoutMs: 15000,
+    argsTemplate: [
+      { name: "host", label: "主机", type: "host", required: true, placeholder: "example.com" },
+      { name: "port", label: "端口", type: "port", required: false, placeholder: "443", default: "443" },
+    ],
+    buildArgs: (f) => [
+      "s_client", "-servername", f.host, "-connect", `${f.host}:${f.port}`,
+      "-cipher", "ALL:COMPLEMENTOFALL", "-no_ign_eof", "</dev/null",
+    ],
+  },
+  {
+    slug: "tls-version-scan",
+    binary: "openssl",
+    description: "依次探测 TLS 1.0 / 1.1 / 1.2 / 1.3 是否支持",
+    timeoutMs: 30000,
+    argsTemplate: [
+      { name: "host", label: "主机", type: "host", required: true, placeholder: "example.com" },
+      { name: "port", label: "端口", type: "port", required: false, placeholder: "443", default: "443" },
+    ],
+    buildArgs: () => ["version"],
+  },
+  {
+    slug: "traceroute-as",
+    binary: "traceroute",
+    description: "路由追踪（不解析 AS — 无权限数据）",
+    timeoutMs: 60000,
+    argsTemplate: [
+      { name: "host", label: "主机", type: "host", required: true, placeholder: "example.com" },
+    ],
+    buildArgs: (f) => ["-I", "-m", "20", f.host],
+  },
+  {
+    slug: "ping-count",
+    binary: "ping",
+    description: "发指定数量包（默认 4）",
+    timeoutMs: 10000,
+    argsTemplate: [
+      { name: "host", label: "主机", type: "host", required: true, placeholder: "example.com" },
+      { name: "count", label: "包数", type: "port", required: false, default: "4" },
+    ],
+    buildArgs: (f) => ["-c", f.count, f.host],
+  },
+  {
+    slug: "tcp-connect",
+    binary: "bash",
+    description: "TCP 三次握手探测（用 /dev/tcp 内建）",
+    timeoutMs: 5000,
+    argsTemplate: [
+      { name: "host", label: "主机", type: "host", required: true, placeholder: "example.com" },
+      { name: "port", label: "端口", type: "port", required: true, placeholder: "443" },
+    ],
+    buildArgs: (f) => [
+      "-c",
+      `timeout 3 bash -c '</dev/tcp/${f.host}/${f.port}' && echo OPEN || echo CLOSED`,
+    ],
+  },
+  {
+    slug: "http-server",
+    binary: "curl",
+    description: "下载 HTTP 响应头 + 状态行",
+    timeoutMs: 12000,
+    argsTemplate: [
+      { name: "url", label: "URL", type: "url", required: true, placeholder: "https://example.com" },
+    ],
+    buildArgs: (f) => ["-sS", "-o", "/dev/null", "-w", "HTTP/%{http_version} %{http_code} %{redirect_url}\n", "-A", "SecToolbox/1.0", f.url],
+  },
+  {
+    slug: "http-time",
+    binary: "curl",
+    description: "测量首屏时间（time_starttransfer）",
+    timeoutMs: 20000,
+    argsTemplate: [
+      { name: "url", label: "URL", type: "url", required: true, placeholder: "https://example.com" },
+    ],
+    buildArgs: (f) => [
+      "-sS", "-o", "/dev/null",
+      "-w", "ttfb=%{time_starttransfer}s  total=%{time_total}s\n",
+      "-A", "SecToolbox/1.0", f.url,
+    ],
+  },
+  {
+    slug: "ipinfo-text",
+    binary: "curl",
+    description: "从 ipinfo.io 取公网 IP / ASN / 地理位置（无 key）",
+    timeoutMs: 15000,
+    argsTemplate: [],
+    buildArgs: () => ["-sS", "https://ipinfo.io/json"],
+  },
 ];
 
 export function executorBySlug(slug: string): ExecutorSpec | undefined {

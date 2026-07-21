@@ -14,6 +14,7 @@ import { Search as SearchIcon, X, Zap, ExternalLink, Filter, Wrench } from "luci
 import { iconByName } from "@/lib/icon-map";
 import { ExploreHero, ExploreHeroBadge } from "@/components/explore-hero";
 import { ExploreSearch } from "@/components/explore-search";
+import { EmptyResults } from "@/components/empty-results";
 
 export default function ToolsClient() {
   const params = useSearchParams();
@@ -141,9 +142,17 @@ export default function ToolsClient() {
 
       <section className="container pb-section">
         {filtered.length === 0 ? (
-          <div className="rounded-lg border border-dashed border-border/60 p-16 text-center text-muted-foreground">
-            没有匹配的工具，换个关键词或清空过滤条件。
-          </div>
+          <EmptyResults
+            title="没找到匹配工具"
+            hint="试试换关键词，或清空过滤条件。常用工具一般一两步就到。"
+            suggestions={[
+              { label: "dig · DNS 查询",        href: "/tools?cat=dns&q=dig" },
+              { label: "nmap · 端口扫描",       href: "/tools?cat=ports&q=nmap" },
+              { label: "curl · HTTP",            href: "/tools?cat=http-tls&q=curl" },
+              { label: "tcpdump · 抓包",        href: "/tools?cat=capture&q=tcpdump" },
+              { label: "trivy · 容器漏扫",      href: "/tools?cat=vulnscan&q=trivy" },
+            ]}
+          />
         ) : (
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 stagger-list">
             {filtered.map((t) => {

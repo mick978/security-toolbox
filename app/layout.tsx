@@ -21,8 +21,55 @@ export const viewport: Viewport = {
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "https://sectoolbox.dev";
   return (
     <html lang="zh-CN" className="dark" suppressHydrationWarning>
+      <head>
+        {/* Structured data — keeps search engines from treating us
+            as a faceless SPA. SoftwareApplication schema for the
+            whole site, plus Organization for the brand profile
+            next to the search result. */}
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify({
+              "@context": "https://schema.org",
+              "@graph": [
+                {
+                  "@type": "Organization",
+                  "@id": `${siteUrl}/#organization`,
+                  name: "SecToolbox",
+                  url: siteUrl,
+                  description: "面向工程师的网络安全排查手册",
+                  sameAs: ["https://github.com/mick978/security-toolbox"],
+                },
+                {
+                  "@type": "WebSite",
+                  "@id": `${siteUrl}/#website`,
+                  url: siteUrl,
+                  name: "SecToolbox",
+                  inLanguage: "zh-CN",
+                  publisher: { "@id": `${siteUrl}/#organization` },
+                  potentialAction: {
+                    "@type": "SearchAction",
+                    target: { "@type": "EntryPoint", urlTemplate: `${siteUrl}/tools?q={search_term_string}` },
+                    "query-input": "required name=search_term_string",
+                  },
+                },
+                {
+                  "@type": "SoftwareApplication",
+                  name: "SecToolbox",
+                  applicationCategory: "DeveloperApplication",
+                  operatingSystem: "Web",
+                  offers: { "@type": "Offer", price: 0, priceCurrency: "CNY" },
+                  url: siteUrl,
+                  description: "免费开源 · 网络安全排查手册",
+                },
+              ],
+            }),
+          }}
+        />
+      </head>
       <body className="min-h-screen bg-background text-foreground">
         {/*
           Skip link — visible only when focused (e.g. when a keyboard user

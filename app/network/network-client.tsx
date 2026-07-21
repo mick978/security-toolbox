@@ -14,6 +14,7 @@ import { ExploreCard } from "@/components/explore-card";
 import { ExploreHero, ExploreHeroBadge } from "@/components/explore-hero";
 import { ExploreSearch } from "@/components/explore-search";
 import { ExploreSection } from "@/components/explore-section";
+import { EmptyResults } from "@/components/empty-results";
 
 const projects = getNetworkProjects();
 
@@ -93,9 +94,16 @@ export default function NetworkClient() {
       <section className="container pb-section">
         <div className="space-y-16">
           {byArea.length === 0 && (
-            <div className="rounded-lg border border-dashed border-border/60 p-16 text-center text-muted-foreground">
-              没有匹配的工具，换个关键词试试。
-            </div>
+            <EmptyResults
+              title="没找到匹配工具"
+              hint="网络排查工具多用于 K8s / 抓包 / AIOps。试试按领域。"
+              suggestions={[
+                { label: "K8s 可观测", href: "/network?q=k8s" },
+                { label: "实时抓包",   href: "/network?q=tcpdump" },
+                { label: "AIOps 诊断", href: "/network?q=aiops" },
+                { label: "应急响应",   href: "/network?q=incident" },
+              ]}
+            />
           )}
           {byArea.map(({ area, projects }) => (
             <ExploreSection

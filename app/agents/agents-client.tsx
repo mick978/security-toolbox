@@ -21,6 +21,7 @@ import { ExploreCard } from "@/components/explore-card";
 import { ExploreHero, ExploreHeroBadge } from "@/components/explore-hero";
 import { ExploreSearch } from "@/components/explore-search";
 import { ExploreSection } from "@/components/explore-section";
+import { EmptyResults } from "@/components/empty-results";
 
 const areas = securityAreas.filter((a) => a.slug !== "general");
 
@@ -88,9 +89,16 @@ export default function AgentsClient() {
       <section className="container pb-section">
         <div className="space-y-16">
           {byArea.length === 0 && (
-            <div className="rounded-lg border border-dashed border-border/60 p-16 text-center text-muted-foreground">
-              没有匹配的 Agent，换个关键词试试。
-            </div>
+            <EmptyResults
+              title="没找到匹配 Agent"
+              hint="按场景分类或换关键词试试。常用：信息收集 / 漏洞扫描 / 渗透测试 / 防御检测 / 应急响应 / 合规。"
+              suggestions={[
+                { label: "信息收集", href: "/agents?cat=recon" },
+                { label: "漏洞扫描", href: "/agents?cat=vuln-scan" },
+                { label: "渗透测试", href: "/agents?cat=exploit" },
+                { label: "应急响应", href: "/agents?cat=incident" },
+              ]}
+            />
           )}
           {byArea.map(({ area, projects }) => (
             <ExploreSection

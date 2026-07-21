@@ -62,6 +62,24 @@ export default async function ToolDetail({ params }: { params: Promise<{ slug: s
     <div className="container py-10">
       <div className="grid lg:grid-cols-[1fr_220px] gap-10">
         <article className="max-w-4xl min-w-0">
+          {/* Tool-level JSON-LD — SoftwareSourceCode schema helps
+              Google surface install command + platforms as rich
+              results when the page is shared. */}
+          <script
+            type="application/ld+json"
+            dangerouslySetInnerHTML={{
+              __html: JSON.stringify({
+                "@context": "https://schema.org",
+                "@type": "SoftwareSourceCode",
+                name: tool.name,
+                description: tool.description,
+                keywords: tool.tags.join(","),
+                codeRepository: tool.homepage,
+                programmingLanguage: "Shell",
+                operatingSystem: tool.platforms.join(","),
+              }),
+            }}
+          />
           <Link href="/tools" className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground mb-6">
             <ArrowLeft className="h-3.5 w-3.5" /> 返回工具库
           </Link>
