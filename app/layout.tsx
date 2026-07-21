@@ -23,8 +23,33 @@ export const viewport: Viewport = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "https://sectoolbox.dev";
   return (
-    <html lang="zh-CN" className="dark" suppressHydrationWarning>
+    <html lang="zh-CN" suppressHydrationWarning>
       <head>
+        {/* No-flash theme bootstrap. Runs synchronously before paint
+            so dark / light + accent + text-color resolve before the
+            first frame. Reads the same three localStorage keys
+            (sectoolbox.theme, sectoolbox.accent, sectoolbox.text) as
+            lib/theme.ts so the persisted preference is honored
+            before React hydration runs. */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              (function(){
+                try {
+                  var t = localStorage.getItem('sectoolbox.theme');
+                  var a = localStorage.getItem('sectoolbox.accent');
+                  var x = localStorage.getItem('sectoolbox.text');
+                  var eff = (t === 'light' || t === 'system' && !window.matchMedia('(prefers-color-scheme: dark)').matches) ? 'light' : 'dark';
+                  var html = document.documentElement;
+                  html.classList.toggle('dark', eff === 'dark');
+                  if (a) html.dataset.accent = a;
+                  if (x) html.dataset.text = x;
+                  else html.dataset.text = 'default';
+                } catch (e) {}
+              })();
+            `,
+          }}
+        />
         {/* Structured data — keeps search engines from treating us
             as a faceless SPA. SoftwareApplication schema for the
             whole site, plus Organization for the brand profile

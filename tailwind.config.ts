@@ -54,6 +54,11 @@ const config: Config = {
           DEFAULT: "hsl(var(--popover))",
           foreground: "hsl(var(--popover-foreground))",
         },
+        /* Driven by [data-text="..."] on <html>. Lets the header
+         *  text-color picker shift the entire body / heading tone
+         *  without touching component classes. */
+        "text-primary": "hsl(var(--text-primary))",
+        "text-heading": "hsl(var(--text-heading))",
       },
       borderRadius: {
         lg: "var(--radius)",
