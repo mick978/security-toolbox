@@ -216,7 +216,7 @@ export default async function ToolDetail({ params }: { params: Promise<{ slug: s
                 .slice(0, 4)
                 .map((t) => (
                   <Link key={t.slug} href={`/tools/${t.slug}`} className="group">
-                    <Card className="h-full transition-colors hover:border-primary/60">
+                    <Card className="h-full overflow-hidden border-border/60 transition-all duration-200 hover:border-primary/60 hover:shadow-xl hover:shadow-primary/10 hover:-translate-y-0.5">
                       <CardHeader>
                         <div className="flex items-center gap-2">
                           <code className="font-mono text-primary text-sm">{t.name}</code>

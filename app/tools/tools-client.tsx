@@ -153,7 +153,11 @@ export default function ToolsClient() {
               const palette = categoryColor(t.category);
               return (
                 <Link key={t.slug} href={`/tools/${t.slug}`} className="group">
-                  <Card className="h-full transition-all hover:border-primary/60 hover:shadow-lg hover:shadow-primary/5">
+                  <Card className="h-full overflow-hidden border-border/60 transition-all duration-200 hover:border-primary/60 hover:shadow-xl hover:shadow-primary/10 hover:-translate-y-0.5">
+                    {/* Top accent strip — single-hue gradient using the
+                        category's palette.border color. Same recipe as
+                        ExploreCard's area-strip, just category-driven here. */}
+                    <div className={`h-1 ${palette.bg}`} aria-hidden="true" />
                     <CardHeader className="pb-3">
                       <div className="flex items-center justify-between mb-2">
                         <div className="flex items-center gap-2">

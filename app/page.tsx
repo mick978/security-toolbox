@@ -145,9 +145,15 @@ export default function HomePage() {
           ].map((c) => {
             const Icon = iconByName(c.icon);
             const count = tools.filter((t) => t.category === c.slug).length;
+            /* accent is a `text-{color}-400` class on Tailwind; pull the
+                hue middle token out (the 500 in "text-X-500") so the strip
+                can use the saturated form. We deliberately keep the same
+                color across the top strip + the icon for visual cohesion. */
+            const accentHue = c.accent.replace(/^text-([a-z]+)-400$/, "from-$1-500 to-$1-400/40");
             return (
               <Link key={c.slug} href={`/tools?cat=${c.slug}`} className="group">
-                <Card className="h-full transition-all hover:border-primary/60 hover:shadow-lg hover:shadow-primary/5">
+                <Card className="h-full overflow-hidden border-border/60 transition-all duration-200 hover:border-primary/60 hover:shadow-xl hover:shadow-primary/10 hover:-translate-y-0.5">
+                  <div className={`h-1 bg-gradient-to-r ${accentHue}`} aria-hidden="true" />
                   <CardHeader>
                     <div className="flex items-center justify-between">
                       <Icon className={`h-6 w-6 ${c.accent}`} aria-hidden="true" />
@@ -182,7 +188,7 @@ export default function HomePage() {
             const count = tools.filter((t) => t.category === c.slug).length;
             return (
               <Link key={c.slug} href={`/tools?cat=${c.slug}`} className="group">
-                <Card className="h-full transition-all hover:border-primary/60 hover:shadow-lg hover:shadow-primary/5">
+                <Card className="h-full overflow-hidden border-border/60 transition-all duration-200 hover:border-primary/60 hover:shadow-xl hover:shadow-primary/10 hover:-translate-y-0.5">
                   <CardHeader>
                     <div className="flex items-center justify-between">
                       <Icon className={`h-6 w-6 ${c.accent}`} aria-hidden="true" />
@@ -211,7 +217,7 @@ export default function HomePage() {
             const runnable = !!executorBySlug(t.slug);
             return (
               <Link key={t.slug} href={`/tools/${t.slug}`} className="group">
-                <Card className="h-full transition-all hover:border-primary/60 hover:shadow-lg hover:shadow-primary/5">
+                <Card className="h-full overflow-hidden border-border/60 transition-all duration-200 hover:border-primary/60 hover:shadow-xl hover:shadow-primary/10 hover:-translate-y-0.5">
                   <CardHeader>
                     <div className="flex items-center gap-2">
                       <code className="text-primary font-mono text-sm">{t.name}</code>
@@ -254,7 +260,8 @@ export default function HomePage() {
             const count = securityAgents.filter((a) => a.area === c.slug).length;
             return (
               <Link key={c.slug} href={`/agents?cat=${c.slug}`} className="group">
-                <Card className="h-full transition-all hover:border-primary/60 hover:shadow-lg hover:shadow-primary/5">
+                <Card className="h-full overflow-hidden border-border/60 transition-all duration-200 hover:border-primary/60 hover:shadow-xl hover:shadow-primary/10 hover:-translate-y-0.5">
+                  <div className="h-1 bg-gradient-to-r from-primary/70 to-primary/30" aria-hidden="true" />
                   <CardHeader>
                     <div className="flex items-center justify-between">
                       <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-primary/10">
@@ -289,7 +296,7 @@ export default function HomePage() {
         </div>
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
           <Link href="/network" className="group md:col-span-2 lg:col-span-3">
-            <Card className="h-full transition-all hover:border-primary/60 hover:shadow-lg hover:shadow-primary/5 bg-gradient-to-br from-primary/5 to-transparent">
+            <Card className="h-full overflow-hidden border-border/60 transition-all duration-200 hover:border-primary/60 hover:shadow-xl hover:shadow-primary/10 hover:-translate-y-0.5 bg-gradient-to-br from-primary/5 to-transparent">
               <CardHeader>
                 <div className="flex items-center gap-3">
                   <div className="flex items-center justify-center w-12 h-12 rounded-lg bg-primary/10">

@@ -7,6 +7,7 @@ import { CodeBlock } from "@/components/code-block";
 import { Mermaid } from "@/components/mermaid";
 import { Topology } from "@/components/topology";
 import { FavoriteButton } from "@/components/favorites-provider";
+import { exploreBg } from "@/lib/explore-palette";
 import {
   ArrowLeft, AlertTriangle, ChevronRight, BookOpen, Zap, Wrench, Clock,
   Globe, Swords, MonitorSmartphone, Cloud, Boxes, Smartphone, Waypoints,
@@ -86,11 +87,12 @@ export default async function CasePage({ params }: { params: Promise<{ slug: str
 
   return (
     <div className="min-h-screen">
-      {/* Hero Header */}
-      <section className="relative overflow-hidden border-b border-border/60">
-        <div className={`absolute inset-0 bg-gradient-to-r ${visual.gradient} opacity-30`} />
-        <div className="absolute inset-0 grid-bg opacity-20" />
-        <div className="container relative py-10 max-w-4xl">
+      {/* Hero Header — same recipe as <ExploreHero /> so a case-detail
+          page doesn't look out of place next to the catalog listing. */}
+      <section className="relative overflow-hidden border-b border-border/60 rounded-b-2xl">
+        <div className="absolute inset-0 hero-gradient-animated opacity-70" aria-hidden="true" />
+        <div className="absolute inset-0 grid-bg opacity-30" aria-hidden="true" />
+        <div className="container relative py-16 lg:py-20 max-w-4xl">
           <Link
             href="/cheatsheet"
             className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-primary mb-6 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60 focus-visible:ring-offset-2 focus-visible:ring-offset-background rounded-md px-2 py-1"
@@ -99,7 +101,7 @@ export default async function CasePage({ params }: { params: Promise<{ slug: str
           </Link>
 
           <div className="flex items-start gap-4">
-            <div className="flex items-center justify-center w-14 h-14 rounded-xl bg-secondary/50 border border-border/40 shrink-0">
+            <div className={`flex items-center justify-center w-14 h-14 rounded-xl ${exploreBg(c.category)} border border-border/40 shrink-0`}>
               <CatIcon className="h-7 w-7 text-foreground/80" aria-hidden="true" />
             </div>
             <div className="flex-1">
