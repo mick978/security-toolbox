@@ -111,6 +111,7 @@ export default function AgentsClient() {
                     title={p.name}
                     description={p.description}
                     areaSlug={p.area}
+                    areaName={area.name}
                     stars={p.stars}
                     owner={p.owner}
                     repo={p.repo}

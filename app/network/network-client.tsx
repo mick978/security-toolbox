@@ -122,6 +122,7 @@ export default function NetworkClient() {
                       title={p.name}
                       description={p.descriptionCn ?? p.description}
                       areaSlug={p.area}
+                      areaName={area.name}
                       stars={p.stars}
                       owner={p.owner}
                       repo={p.repo}

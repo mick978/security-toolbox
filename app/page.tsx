@@ -93,11 +93,11 @@ export default function HomePage() {
                   key={role.href}
                   href={role.href}
                   aria-label={role.aria}
-                  className={`group flex items-start gap-3 p-4 rounded-lg border border-border/60 bg-card transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60 focus-visible:ring-offset-2 focus-visible:ring-offset-background ${role.hover}`}
+                  className={`group flex items-start gap-3 p-4 rounded-lg border border-border/60 bg-card transition-all duration-200 hover:border-primary/60 hover:shadow-xl hover:shadow-primary/10 ${role.hover}`}
                 >
-                  <Icon className={`h-5 w-5 shrink-0 mt-0.5 ${role.iconClass}`} aria-hidden="true" />
+                  <Icon className={`h-5 w-5 shrink-0 mt-0.5 ${role.iconClass} group-hover:scale-110 transition-transform`} aria-hidden="true" />
                   <div>
-                    <div className="font-semibold text-sm">{role.title}</div>
+                    <div className="font-semibold text-sm group-hover:text-primary transition-colors">{role.title}</div>
                     <p className="text-xs text-muted-foreground mt-1 leading-relaxed">{role.desc}</p>
                   </div>
                 </Link>
