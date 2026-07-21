@@ -83,20 +83,19 @@ export function ExploreCard({
       className="group block min-w-0 rounded-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60 focus-visible:ring-offset-2 focus-visible:ring-offset-background"
       aria-label={ariaLabel ?? `查看 ${title} 的详细 README`}
     >
-      <Card className="relative h-full overflow-hidden border-border/60 bg-card transition-all duration-300 ease-out group-hover:-translate-y-1 group-hover:border-primary/60 group-hover:shadow-2xl group-hover:shadow-primary/15">
-        {/* Top accent strip — 8px so the area's color actually shows */}
-        <div className={`h-2 bg-gradient-to-r ${stripFrom}`} aria-hidden="true" />
+      <Card className="relative h-full overflow-hidden border-border/60 bg-card transition-all duration-300 ease-out group-hover:-translate-y-0.5 group-hover:border-primary/60 group-hover:shadow-xl group-hover:shadow-primary/15">
+        {/* Top accent strip — 6px so the area color reads without
+            dominating the card. */}
+        <div className={`h-1.5 bg-gradient-to-r ${stripFrom}`} aria-hidden="true" />
 
-        {/* Diagonal shimmer — only animates on hover. The gradient
-            moves from top-left (transparent) to bottom-right (subtle
-            primary wash) over 700ms. Pure CSS so it costs nothing
-            server-side. */}
+        {/* Diagonal shimmer — only animates on hover. Pure CSS gradient
+            mask, no JS. Subtle enough not to fight the title text. */}
         <div
           className="pointer-events-none absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300"
           aria-hidden="true"
           style={{
             background:
-              "linear-gradient(115deg, transparent 0%, hsl(var(--primary) / 0.05) 35%, hsl(var(--primary) / 0.12) 50%, hsl(var(--primary) / 0.05) 65%, transparent 100%)",
+              "linear-gradient(115deg, transparent 0%, hsl(var(--primary) / 0.04) 35%, hsl(var(--primary) / 0.10) 50%, hsl(var(--primary) / 0.04) 65%, transparent 100%)",
           }}
         />
 
@@ -104,48 +103,47 @@ export function ExploreCard({
           {/* Area chip — sits above the icon so readers see category
               first, like in the cheatsheet severity cards. */}
           {areaName && (
-            <div className="flex items-center gap-2 mb-3">
+            <div className="flex items-center gap-2 mb-2">
               <span
                 className={cn(
-                  "inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-[11px] font-medium",
+                  "inline-flex items-center gap-1 rounded-full px-1.5 py-0.5 text-[10px] font-medium",
                   tileBg,
                 )}
               >
                 {AreaIcon && (
-                  <AreaIcon className="h-3 w-3" aria-hidden="true" />
+                  <AreaIcon className="h-2.5 w-2.5" aria-hidden="true" />
                 )}
                 {areaName}
               </span>
             </div>
           )}
 
-          <div className="flex items-start gap-4">
-            {/* Large rounded-square icon tile — gives the card a strong
-                left rail of color tied to the area. 12px radius on a
-                56px square keeps it distinct from the outer card's
-                rounded-xl (10px effective) without breaking the
-                visual rhythm. */}
+          <div className="flex items-start gap-3">
+            {/* Compact rounded-square icon tile — 40px gives a color
+                anchor without crowding the card. The reduced radius
+                (10px) sits inside the outer rounded-xl so the two
+                shapes nest visually. */}
             <div
               className={cn(
-                "flex items-center justify-center w-14 h-14 rounded-xl shrink-0 border border-border/40",
+                "flex items-center justify-center w-10 h-10 rounded-[10px] shrink-0 border border-border/40",
                 tileBg,
               )}
             >
               {AreaIcon && (
-                <AreaIcon className="h-7 w-7 text-foreground/85" aria-hidden="true" />
+                <AreaIcon className="h-5 w-5 text-foreground/85" aria-hidden="true" />
               )}
             </div>
 
             <div className="min-w-0 flex-1">
               <div className="flex items-start justify-between gap-2">
-                <CardTitle className="text-lg font-semibold leading-tight transition-colors group-hover:text-primary line-clamp-2">
+                <CardTitle className="text-sm font-semibold leading-snug transition-colors group-hover:text-primary line-clamp-2">
                   {title}
                 </CardTitle>
-                <span className="inline-flex items-center gap-1 rounded-full border border-yellow-500/40 bg-yellow-500/10 px-2 py-0.5 text-[11px] font-mono text-yellow-700 dark:text-yellow-300 shrink-0">
-                  <Star className="h-3 w-3 fill-current" aria-hidden="true" /> {formatStars(stars)}
+                <span className="inline-flex items-center gap-0.5 rounded-full border border-yellow-500/40 bg-yellow-500/10 px-1.5 py-0.5 text-[10px] font-mono text-yellow-700 dark:text-yellow-300 shrink-0">
+                  <Star className="h-2.5 w-2.5 fill-current" aria-hidden="true" /> {formatStars(stars)}
                 </span>
               </div>
-              <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground font-mono mt-1">
+              <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground font-mono mt-0.5">
                 <span className="text-primary/60 font-semibold">#{String(index + 1).padStart(2, "0")}</span>
                 <span className="opacity-40">·</span>
                 <span className="truncate">{owner}/{repo}</span>
@@ -153,14 +151,14 @@ export function ExploreCard({
             </div>
           </div>
 
-          <p className="text-sm text-muted-foreground line-clamp-3 mt-3 leading-relaxed">
+          <p className="text-xs text-muted-foreground line-clamp-2 mt-2 leading-relaxed">
             {description}
           </p>
         </CardHeader>
 
         <div className="px-6 pb-4 relative">
           {topics.length > 0 && (
-            <div className="flex flex-wrap gap-1 mb-3">
+            <div className="flex flex-wrap gap-1 mb-2.5">
               {topics.slice(0, 4).map((t) => (
                 <Badge key={t} className="text-[10px] py-0.5">#{t}</Badge>
               ))}
@@ -168,7 +166,7 @@ export function ExploreCard({
           )}
 
           {installCommand && (
-            <div className="group/code mb-3 flex items-center gap-1 rounded-md border border-border/40 bg-secondary/40 px-2.5 py-1.5 transition-colors group-hover:border-primary/40 group-hover:bg-secondary/60">
+            <div className="group/code mb-2.5 flex items-center gap-1 rounded-md border border-border/40 bg-secondary/40 px-2 py-1 transition-colors group-hover:border-primary/40 group-hover:bg-secondary/60">
               <code className="min-w-0 flex-1 truncate font-mono text-[11px] text-foreground/80">
                 {installCommand}
               </code>
@@ -176,14 +174,14 @@ export function ExploreCard({
             </div>
           )}
 
-          <div className="flex items-center justify-between pt-3 border-t border-border/40">
-            <span className="inline-flex min-w-0 items-center gap-1.5 text-xs text-muted-foreground">
+          <div className="flex items-center justify-between pt-2.5 border-t border-border/40">
+            <span className="inline-flex min-w-0 items-center gap-1.5 text-[11px] text-muted-foreground">
               <Github className="h-3 w-3 shrink-0" aria-hidden="true" />
               <span className="truncate font-mono">{owner}/{repo}</span>
             </span>
-            <span className="inline-flex items-center text-xs font-medium text-primary opacity-0 translate-x-1 transition-all group-hover:opacity-100 group-hover:translate-x-0">
+            <span className="inline-flex items-center text-[11px] font-medium text-primary opacity-0 translate-x-1 transition-all group-hover:opacity-100 group-hover:translate-x-0">
               查看详情
-              <ChevronRight className="h-4 w-4 ml-0.5" aria-hidden="true" />
+              <ChevronRight className="h-3.5 w-3.5 ml-0.5" aria-hidden="true" />
             </span>
           </div>
         </div>
