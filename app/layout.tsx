@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import "./globals.css";
 import { Header } from "@/components/header";
+import { MobileToolbar } from "@/components/mobile-toolbar";
 import { Toaster } from "@/components/ui/toaster";
 import Link from "next/link";
 import { Shield, Github, ExternalLink } from "lucide-react";
@@ -133,9 +134,13 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           跳到正文
         </a>
         <Header />
-        <main id="main-content" tabIndex={-1}>
+        <main id="main-content" tabIndex={-1} className="pb-20 md:pb-0">
           {children}
         </main>
+
+        {/* Mobile bottom tab bar — hidden md+; pb-20 above keeps page
+            content from being covered by the 56px bar + safe-area inset. */}
+        <MobileToolbar />
 
         {/* Footer - ao.aiolaola.com style */}
         <footer className="border-t border-border/60 mt-24">
