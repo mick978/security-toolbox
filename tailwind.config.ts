@@ -10,6 +10,16 @@ const config: Config = {
   theme: {
     container: { center: true, padding: "1rem", screens: { "2xl": "1400px" } },
     extend: {
+      /* Layout rhythm — used in app/page.tsx (and other pages) to keep
+       * vertical spacing predictable instead of the previous mt-8 / mt-10 /
+       * mt-12 mix. Use `section` for the gap between major page blocks,
+       * `block` for the gap between an inner heading and its content,
+       * `tight` for closely-related inline groups (icon + meta, etc.). */
+      spacing: {
+        section: "4.5rem",  // 72px between major page sections
+        block: "2rem",      // 32px between heading & content
+        tight: "0.75rem",   // 12px — replaces most ad-hoc mt-3
+      },
       colors: {
         border: "hsl(var(--border))",
         input: "hsl(var(--input))",
@@ -39,6 +49,10 @@ const config: Config = {
         card: {
           DEFAULT: "hsl(var(--card))",
           foreground: "hsl(var(--card-foreground))",
+        },
+        popover: {
+          DEFAULT: "hsl(var(--popover))",
+          foreground: "hsl(var(--popover-foreground))",
         },
       },
       borderRadius: {

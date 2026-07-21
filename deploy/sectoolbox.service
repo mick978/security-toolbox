@@ -1,0 +1,35 @@
+# sectoolbox.service — systemd unit for the standalone Next.js server.
+#
+# Install:
+#   sudo cp deploy/sectoolbox.service /etc/systemd/system/
+#   sudo systemctl daemon-reload
+#   sudo systemctl enable --now sectoolbox
+#   sudo journalctl -u sectoolbox -f
+[Unit]
+Description=SecToolbox (Next.js standalone)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=sectoolbox
+Group=sectoolbox
+WorkingDirectory=/opt/sectoolbox
+EnvironmentFile=/opt/sectoolbox/.env
+# Standalone server reads PORT from env (we export it in .env above).
+ExecStart=/usr/bin/env node server.js
+Restart=on-failure
+RestartSec=5
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+PrivateTmp=true
+ReadWritePaths=/opt/sectoolbox
+# Hardening: don't leak env to subprocesses we don't spawn.
+RestrictSUIDSGID=true
+LockPersonality=true
+RestrictRealtime=true
+RestrictNamespaces=true
+
+[Install]
+WantedBy=multi-user.target

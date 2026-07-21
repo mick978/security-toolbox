@@ -2,9 +2,9 @@
 
 import { useState, useMemo } from "react";
 import Link from "next/link";
-import * as Icons from "lucide-react";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { CopyButton } from "@/components/copy-button";
 import { cn } from "@/lib/utils";
 import {
   getNetworkProjects,
@@ -13,7 +13,8 @@ import {
   type SecurityArea,
   formatStars,
 } from "@/lib/github-projects";
-import { Search, X, Activity, Star, Github, ExternalLink } from "lucide-react";
+import { Search, X, Activity, Star, Github, ExternalLink, Wrench, Code } from "lucide-react";
+import { iconByName } from "@/lib/icon-map";
 
 const projects = getNetworkProjects();
 
@@ -43,38 +44,55 @@ export default function NetworkClient() {
   return (
     <div className="container py-10">
       {/* Hero */}
-      <section className="relative mb-12 overflow-hidden">
-        <div className="absolute inset-0 hero-gradient opacity-50" />
+      <section className="surface-hero relative mb-10 overflow-hidden rounded-2xl px-6 py-10 md:px-10 md:py-14">
+        <div className="absolute inset-0 hero-gradient-animated opacity-60" aria-hidden="true" />
+        <div className="absolute inset-0 grid-bg opacity-25" aria-hidden="true" />
         <div className="relative">
-          <Badge className="mb-4 border-primary/40 text-primary bg-primary/10">
-            <Activity className="h-3 w-3 mr-1" />
+          <Badge className="mb-5 border-primary/40 bg-primary/10 text-primary">
+            <Activity className="mr-1 h-3 w-3" />
             网络自动化排查
           </Badge>
-          <h1 className="text-4xl md:text-5xl font-bold tracking-tight">
-            网络<span className="text-primary">自动化排查</span>工具集
+          <h1 className="text-3xl font-semibold leading-tight tracking-tight md:text-4xl lg:text-5xl">
+            网络
+            <span className="ml-2 bg-gradient-to-r from-primary via-primary/80 to-primary/60 bg-clip-text text-transparent">
+              自动化排查
+            </span>
+            工具集
           </h1>
-          <p className="mt-4 max-w-2xl text-lg text-muted-foreground">
+          <p className="mt-4 max-w-2xl text-sm leading-relaxed text-muted-foreground md:text-base">
             来自 GitHub 的真实开源网络排查工具：K8s 可观测性、实时 / 离线抓包、Prometheus / NetBox、AIOps 智能诊断 —— 点击卡片查看项目真实 README。
           </p>
 
           {/* Stats */}
-          <div className="mt-8 grid grid-cols-2 md:grid-cols-4 gap-4 max-w-3xl">
+          <div className="mt-8 grid grid-cols-2 gap-3 md:grid-cols-4 md:gap-4 max-w-3xl">
             {[
               { value: String(projects.length), label: "网络工具", icon: Activity },
-              { value: String(mcpCount), label: "MCP 服务器", icon: Activity },
-              { value: String(skillCount + agentCount), label: "Skills + Agent", icon: Activity },
-              { value: formatStars(projects.reduce((a, p) => a + p.stars, 0)), label: "GitHub 总 Star", icon: Star },
+              { value: String(mcpCount), label: "MCP 服务器", icon: Wrench },
+              { value: String(skillCount + agentCount), label: "Skills + Agent", icon: Code },
+              { value: formatStars(projects.reduce((a, p) => a + p.stars, 0)), label: "GitHub 总 Star", icon: Star, accent: true },
             ].map((stat) => {
               const Icon = stat.icon;
               return (
-                <div key={stat.label} className="flex items-center gap-3 p-3 rounded-lg bg-secondary/30 border border-border/40">
-                  <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-primary/10">
-                    <Icon className="h-5 w-5 text-primary" />
+                <div
+                  key={stat.label}
+                  className="surface-card relative overflow-hidden rounded-xl px-3 py-3 md:px-4 md:py-4"
+                >
+                  <div className="flex items-center gap-2.5 md:gap-3 min-w-0">
+                    <div className="flex h-8 w-8 md:h-9 md:w-9 shrink-0 items-center justify-center rounded-md bg-primary/10">
+                      <Icon className="h-4 w-4 text-primary" aria-hidden="true" />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <div className="truncate text-lg font-semibold tabular-nums md:text-2xl">
+                        {stat.value}
+                      </div>
+                      <div className="truncate text-[11px] text-muted-foreground md:text-xs">
+                        {stat.label}
+                      </div>
+                    </div>
                   </div>
-                  <div>
-                    <div className="text-2xl font-bold">{stat.value}</div>
-                    <div className="text-xs text-muted-foreground">{stat.label}</div>
-                  </div>
+                  {stat.accent && (
+                    <div className="sparkline mt-2 opacity-80" aria-hidden="true" />
+                  )}
                 </div>
               );
             })}
@@ -105,7 +123,7 @@ export default function NetworkClient() {
         <div className="flex flex-wrap gap-2">
           <FilterChip active={cat === "all"} onClick={() => setCat("all")}>全部</FilterChip>
           {areaFilters.map((a) => {
-            const Icon = (Icons as any)[a.icon] ?? Icons.Circle;
+            const Icon = iconByName(a.icon);
             return (
               <FilterChip
                 key={a.slug}
@@ -121,7 +139,7 @@ export default function NetworkClient() {
       </div>
 
       {/* Grid */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 stagger-list">
         {filtered.map((p) => (
           <ProjectCard key={p.slug} project={p} />
         ))}
@@ -143,40 +161,67 @@ function ProjectCard({ project }: { project: GitHubProject }) {
   return (
     <Link
       href={detailHref}
-      className="group block focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60 focus-visible:ring-offset-2 focus-visible:ring-offset-background rounded-xl"
+      className="group block min-w-0 rounded-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60 focus-visible:ring-offset-2 focus-visible:ring-offset-background"
       aria-label={`查看 ${project.name}（${kindLabel}）的详细 README`}
     >
-      <Card className="h-full transition-all duration-200 hover:-translate-y-0.5 hover:border-primary/60 hover:shadow-lg hover:shadow-primary/10 dark:hover:shadow-primary/5">
-        <CardHeader>
-          <div className="flex items-start justify-between gap-2">
-            <CardTitle className="text-base leading-snug">{project.name}</CardTitle>
-            <span className="inline-flex items-center gap-1 text-xs text-foreground/80 shrink-0 tabular-nums">
-              <Star className="h-3.5 w-3.5 text-yellow-500 dark:text-yellow-400 fill-yellow-500/20" aria-hidden="true" />
-              <span className="font-semibold">{formatStars(project.stars)}</span>
+      <article className="surface-card relative flex h-full flex-col overflow-hidden rounded-xl px-4 py-4">
+        <div
+          className={cn("absolute left-0 top-0 bottom-0 w-[3px]", area?.bg ?? "bg-primary/30")}
+          aria-hidden="true"
+        />
+
+        <header className="flex items-start justify-between gap-3">
+          <div className="min-w-0">
+            <h3 className="line-clamp-2 text-[15px] font-semibold leading-snug tracking-tight text-foreground">
+              {project.name}
+            </h3>
+            <span className="mt-1 inline-block text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
+              {kindLabel}
             </span>
           </div>
-          <div className="flex flex-wrap gap-1 mt-1">
-            <Badge className="text-[10px]">{kindLabel}</Badge>
-            {area && <Badge className="text-[10px]">{area.name}</Badge>}
-            {project.language && <Badge className="text-[10px]">{project.language}</Badge>}
-          </div>
-          <CardDescription className="mt-2 text-xs line-clamp-3">{project.descriptionCn ?? project.description}</CardDescription>
-        </CardHeader>
-        <CardContent className="pt-0">
-          <div className="flex items-center gap-1.5 text-xs text-foreground/70 font-mono">
-            <Github className="h-3 w-3 shrink-0" aria-hidden="true" />
-            <span className="truncate">{project.owner}/{project.repo}</span>
-          </div>
-          {project.installCommand && (
-            <code className="block mt-2 px-2 py-1 rounded bg-secondary/60 border border-border/50 text-[10px] font-mono truncate text-foreground/80">
+          <span className="inline-flex shrink-0 items-center gap-1 text-xs tabular-nums text-muted-foreground">
+            <Star className="h-3.5 w-3.5 fill-yellow-500/30 text-yellow-500 dark:text-yellow-400" aria-hidden="true" />
+            <span className="font-medium text-foreground/80">{formatStars(project.stars)}</span>
+          </span>
+        </header>
+
+        <div className="mt-2 flex items-center gap-1.5 text-[11px]">
+          {area && (
+            <span className={cn("inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 font-medium", area.bg, area.color)}>
+              {area.name}
+            </span>
+          )}
+          {project.language && (
+            <span className="inline-flex items-center rounded-md bg-secondary/40 px-1.5 py-0.5 font-mono text-muted-foreground">
+              {project.language}
+            </span>
+          )}
+        </div>
+
+        <p className="mt-3 line-clamp-3 text-xs leading-relaxed text-muted-foreground">
+          {project.descriptionCn ?? project.description}
+        </p>
+
+        {project.installCommand && (
+          <div className="group/code mt-3 flex items-center gap-1 rounded-md border border-border/40 bg-secondary/30 px-2 py-1.5 transition-colors group-hover:border-border/70 group-hover:bg-secondary/50">
+            <code className="min-w-0 flex-1 truncate font-mono text-[11px] text-foreground/80">
               {project.installCommand}
             </code>
-          )}
-          <div className="mt-3 flex items-center text-xs text-primary opacity-0 -translate-x-1 group-hover:opacity-100 group-hover:translate-x-0 group-focus-visible:opacity-100 group-focus-visible:translate-x-0 transition-all duration-200">
-            查看真实 README <ExternalLink className="h-3 w-3 ml-1" aria-hidden="true" />
+            <CopyButton text={project.installCommand} label="复制安装命令" />
           </div>
-        </CardContent>
-      </Card>
+        )}
+
+        <footer className="mt-3 flex items-center justify-between gap-2 border-t border-border/40 pt-3">
+          <span className="inline-flex min-w-0 items-center gap-1.5 truncate font-mono text-[11px] text-muted-foreground">
+            <Github className="h-3 w-3 shrink-0" aria-hidden="true" />
+            <span className="truncate">{project.owner}/{project.repo}</span>
+          </span>
+          <span className="inline-flex shrink-0 items-center gap-0.5 text-[11px] font-medium text-primary opacity-0 transition-all duration-200 -translate-x-1 group-hover:translate-x-0 group-hover:opacity-100">
+            查看
+            <ExternalLink className="h-3 w-3" aria-hidden="true" />
+          </span>
+        </footer>
+      </article>
     </Link>
   );
 }

@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import "./globals.css";
 import { Header } from "@/components/header";
 import { Toaster } from "@/components/ui/toaster";
@@ -10,12 +10,36 @@ export const metadata: Metadata = {
   description: "命令、示例、一键复制 —— 面向 DevOps / SRE / 安全工程师的网络安全排查工具速查手册。",
 };
 
+// Mobile-first viewport. Without this the layout assumes 980px desktop width
+// on phones and content overflows horizontally. themeColor matches the dark
+// background so the address bar doesn't flash white on iOS Safari.
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 5,
+  themeColor: "#0a0a0a",
+};
+
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="zh-CN" className="dark" suppressHydrationWarning>
       <body className="min-h-screen bg-background text-foreground">
+        {/*
+          Skip link — visible only when focused (e.g. when a keyboard user
+          tabs in). Goes straight to the <main> landmark so users don't
+          have to tab past the header / nav. Styled with the project's
+          existing focus-ring tokens so it integrates without a new style.
+        */}
+        <a
+          href="#main-content"
+          className="sr-only focus:not-sr-only focus:fixed focus:top-3 focus:left-3 focus:z-[100] focus:px-4 focus:py-2 focus:rounded-md focus:bg-primary focus:text-primary-foreground focus:shadow-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60"
+        >
+          跳到正文
+        </a>
         <Header />
-        <main>{children}</main>
+        <main id="main-content" tabIndex={-1}>
+          {children}
+        </main>
 
         {/* Footer - ao.aiolaola.com style */}
         <footer className="border-t border-border/60 mt-24">

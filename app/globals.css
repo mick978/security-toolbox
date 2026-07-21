@@ -8,6 +8,11 @@
     --foreground: 240 10% 6%;
     --card: 0 0% 100%;
     --card-foreground: 240 10% 6%;
+    /* Popover — used by CommandMenu, FavoritesDrawer, Toaster for their
+     * floating surface backgrounds. Matches card in dark; pure white in
+     * light so the panels stand out against the tinted page background. */
+    --popover: 0 0% 100%;
+    --popover-foreground: 240 10% 6%;
     --primary: 262 83% 50%;
     --primary-foreground: 0 0% 100%;
     --secondary: 240 5% 96%;
@@ -24,11 +29,45 @@
     --ring: 262 83% 50%;
     --radius: 0.6rem;
   }
+  /* Accent presets — chosen at runtime via the `data-accent` attribute on
+   * <html>. Each one shadows both `--primary` and `--ring` (and the
+   * derived `cat-*` family doesn't need to change because primary alone is
+   * the only thing we want to recolour). Keeping the list short to avoid
+   * choice paralysis — 4 is plenty for a single-purpose site. */
+  [data-accent="purple"] {
+    --primary: 262 83% 50%;
+    --ring: 262 83% 50%;
+  }
+  [data-accent="blue"] {
+    --primary: 217 91% 60%;
+    --ring: 217 91% 60%;
+  }
+  [data-accent="green"] {
+    --primary: 142 70% 38%;
+    --ring: 142 70% 38%;
+  }
+  [data-accent="rose"] {
+    --primary: 340 82% 52%;
+    --ring: 340 82% 52%;
+  }
+  /* New presets — amber (warm, "alert" feel) and cyan (cool, "info" feel).
+   * Added alongside purple/blue/green/rose so the header picker can show
+   * 6 options without breaking the existing 4-swatch layout. */
+  [data-accent="amber"] {
+    --primary: 32 95% 50%;
+    --ring: 32 95% 50%;
+  }
+  [data-accent="cyan"] {
+    --primary: 187 92% 45%;
+    --ring: 187 92% 45%;
+  }
   .dark {
     --background: 240 10% 5%;
     --foreground: 0 0% 98%;
     --card: 240 8% 8%;
     --card-foreground: 0 0% 98%;
+    --popover: 240 8% 8%;
+    --popover-foreground: 0 0% 98%;
     --primary: 262 83% 65%;
     --primary-foreground: 0 0% 100%;
     --secondary: 240 4% 14%;
@@ -61,5 +100,153 @@
     background:
       radial-gradient(circle at 20% 20%, hsl(var(--primary) / 0.15), transparent 50%),
       radial-gradient(circle at 80% 60%, hsl(var(--primary) / 0.08), transparent 50%);
+  }
+
+  /* Animated hero gradient — a slow drifting conic-gradient + radial blobs.
+   * Uses `transform: translate3d` rather than animating background-position
+   * because background-position animation on a radial gradient is choppy on
+   * Safari. The 18s ease-in-out cycle is long enough to feel ambient, not
+   * distracting. Disabled entirely under `prefers-reduced-motion`. */
+  .hero-gradient-animated {
+    background:
+      radial-gradient(circle at 20% 30%, hsl(var(--primary) / 0.22), transparent 55%),
+      radial-gradient(circle at 75% 70%, hsl(var(--primary) / 0.14), transparent 55%),
+      radial-gradient(circle at 50% 50%, hsl(var(--primary) / 0.06), transparent 70%);
+    background-size: 200% 200%;
+    animation: hero-drift 18s ease-in-out infinite;
+  }
+  @keyframes hero-drift {
+    0%, 100% { background-position: 0% 0%, 100% 100%, 50% 50%; }
+    50%      { background-position: 100% 30%, 0% 70%, 60% 40%; }
+  }
+
+  /* Glow ring — pulsing accent border used on hero badges and active nav tabs. */
+  .glow-ring {
+    box-shadow:
+      0 0 0 1px hsl(var(--primary) / 0.4),
+      0 0 12px -2px hsl(var(--primary) / 0.5);
+  }
+
+  /* Card surface — soft layered shadows + 1px hairline border. The base is
+   * nearly transparent so cards blend with the page background; the lift
+   * comes from `shadow-card` (subtle inner) + `shadow-card-hover` (visible
+   * only on hover). Together they give a Linear/Vercel "lifted panel" feel
+   * without looking like a Material elevation. */
+  .surface-card {
+    background: linear-gradient(180deg, hsl(var(--card) / 0.6), hsl(var(--card) / 0.4));
+    border: 1px solid hsl(var(--border) / 0.6);
+    box-shadow:
+      0 1px 0 0 hsl(var(--foreground) / 0.04) inset,
+      0 1px 2px 0 hsl(0 0% 0% / 0.18);
+    transition: transform 220ms cubic-bezier(0.2, 0.7, 0.2, 1),
+                border-color 220ms ease,
+                box-shadow 220ms ease;
+  }
+  .surface-card:hover {
+    border-color: hsl(var(--primary) / 0.45);
+    box-shadow:
+      0 1px 0 0 hsl(var(--foreground) / 0.06) inset,
+      0 8px 24px -10px hsl(var(--primary) / 0.25),
+      0 2px 6px -2px hsl(0 0% 0% / 0.25);
+  }
+
+  /* Hero surface — slightly more lift than cards, used on the page hero
+   * section. The radial gradient at top simulates a spotlight; the bottom
+   * hairline acts as the section divider. */
+  .surface-hero {
+    background:
+      radial-gradient(ellipse 80% 60% at 50% 0%, hsl(var(--primary) / 0.10), transparent 60%),
+      linear-gradient(180deg, hsl(var(--card) / 0.7), hsl(var(--card) / 0.5));
+    border: 1px solid hsl(var(--border) / 0.6);
+    box-shadow:
+      0 1px 0 0 hsl(var(--foreground) / 0.05) inset,
+      0 1px 3px 0 hsl(0 0% 0% / 0.2);
+  }
+
+  /* Underline indicator for tabs — animates between left/width so it
+   * slides under the active tab. Pair with `data-[active="true"]` etc.
+   * Implementation uses a single ::after pseudo on the tab group. */
+  .tab-underline {
+    position: relative;
+  }
+  .tab-underline::after {
+    content: "";
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: -1px;
+    height: 2px;
+    background: linear-gradient(90deg, hsl(var(--primary) / 0.7), hsl(var(--primary)));
+    border-radius: 2px;
+    transform: scaleX(0.3);
+    opacity: 0;
+    transition: transform 240ms cubic-bezier(0.2, 0.7, 0.2, 1),
+                opacity 240ms ease;
+  }
+  .tab-underline[data-active="true"]::after {
+    transform: scaleX(1);
+    opacity: 1;
+  }
+
+  /* Sparkline — pure CSS gradient + 1px stroke. Used for the hero star
+   * distribution chart so we don't pull in a chart library. The fill is
+   * 50% opacity at the bottom; the stroke rides the top edge. */
+  .sparkline {
+    width: 100%;
+    height: 36px;
+    background-image:
+      linear-gradient(to top, hsl(var(--primary) / 0.18) 0%, transparent 60%),
+      linear-gradient(to right,
+        hsl(var(--primary) / 0.55) 0%,
+        hsl(var(--primary)) 100%);
+    background-size: 100% 100%, 100% 1px;
+    background-repeat: no-repeat;
+    background-position: bottom, var(--spark-bg-x, 0%) var(--spark-bg-y, top);
+    -webkit-mask-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 36' preserveAspectRatio='none'><path d='M0,28 L8,22 L16,25 L24,18 L32,20 L40,12 L48,15 L56,8 L64,14 L72,6 L80,10 L88,4 L100,8' fill='none' stroke='black' stroke-width='1.5'/></svg>");
+    mask-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 36' preserveAspectRatio='none'><path d='M0,28 L8,22 L16,25 L24,18 L32,20 L40,12 L48,15 L56,8 L64,14 L72,6 L80,10 L88,4 L100,8' fill='none' stroke='black' stroke-width='1.5'/></svg>");
+    -webkit-mask-size: 100% 100%;
+    mask-size: 100% 100%;
+    -webkit-mask-repeat: no-repeat;
+    mask-repeat: no-repeat;
+  }
+
+  /* Stagger list — list children fade-in with ascending delay up to 12 items.
+   * Apply by adding `.stagger-list` on the grid container. Pair with the
+   * existing `.animate-fade-in` (or a fresh `.animate-stagger-in`) on each
+   * child. The 12-step cap keeps CSS short and prevents extremely long lists
+   * from waiting — anything beyond index 12 just snaps in. */
+  .stagger-list > * {
+    opacity: 0;
+    animation: stagger-in 320ms ease-out forwards;
+  }
+  .stagger-list > *:nth-child(1)  { animation-delay:   0ms; }
+  .stagger-list > *:nth-child(2)  { animation-delay:  40ms; }
+  .stagger-list > *:nth-child(3)  { animation-delay:  80ms; }
+  .stagger-list > *:nth-child(4)  { animation-delay: 120ms; }
+  .stagger-list > *:nth-child(5)  { animation-delay: 160ms; }
+  .stagger-list > *:nth-child(6)  { animation-delay: 200ms; }
+  .stagger-list > *:nth-child(7)  { animation-delay: 240ms; }
+  .stagger-list > *:nth-child(8)  { animation-delay: 280ms; }
+  .stagger-list > *:nth-child(9)  { animation-delay: 320ms; }
+  .stagger-list > *:nth-child(10) { animation-delay: 360ms; }
+  .stagger-list > *:nth-child(11) { animation-delay: 400ms; }
+  .stagger-list > *:nth-child(n+12) { animation-delay: 440ms; }
+
+  @keyframes stagger-in {
+    from { opacity: 0; transform: translateY(6px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  /* Respect the system-level "reduce motion" preference. We collapse both
+   * `.animate-fade-in` and `.stagger-list` to a single 0-ms opacity switch
+   * so users with the setting never see motion at all. */
+  @media (prefers-reduced-motion: reduce) {
+    .stagger-list > *,
+    .animate-fade-in,
+    .hero-gradient-animated {
+      animation: none !important;
+      opacity: 1 !important;
+      transform: none !important;
+    }
   }
 }

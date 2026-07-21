@@ -11,12 +11,24 @@ export type CaseCategory = "network" | "attack" | "system" | "cloud" | "k8s" | "
 export interface Cheatsheet {
   slug: string;
   title: string;
+  /** One-line TL;DR; ≤80 zh chars; answer "what outcome this SOP delivers".
+   *  Shown bold on detail hero, used by search/OG, read by AI agents. */
   summary: string;
   category: CaseCategory;
   severity?: "info" | "warn" | "danger";
   tags: string[];
+  /** Estimated time-to-resolution. Drives the chip on detail hero. */
+  durationMinutes?: number;
+  /** Skill-level required. Drives chip color + filter facets. */
+  difficulty?: "beginner" | "intermediate" | "advanced";
+  /** Conditions / assets needed before step 1 can run. */
+  prereq?: string[];
   steps: CheatsheetStep[];
   relatedTools?: string[];
+  /** Cross-category links used in the "相关案例" block. */
+  relatedCases?: string[];
+  /** ISO 8601 timestamp of last review. Drives "Last reviewed" chip. */
+  lastReviewed?: string;
 }
 
 export const caseCategories: { slug: CaseCategory; name: string; desc: string; icon: string }[] = [
@@ -33,6 +45,10 @@ export const cheatsheets: Cheatsheet[] = [
   // ==================== 网络问题 ====================
   {
     slug: "domain-cannot-resolve",
+    durationMinutes: 10,
+    difficulty: "beginner",
+    prereq: ["已获取目标域名", "可以访问外网（UDP+TCP 53）"],
+    lastReviewed: "2026-07",
     category: "network",
     title: "网站访问不了 · 域名解析异常",
     summary: "从本地 DNS → 公共 DNS → 权威链 → 连通性依次排查",
@@ -58,6 +74,11 @@ export const cheatsheets: Cheatsheet[] = [
   },
   {
     slug: "https-cert-error",
+    durationMinutes: 25,
+    difficulty: "intermediate",
+    prereq: ["目标域名的 DNS 已正确解析", "可访问 443/TCP 出网"],
+    lastReviewed: "2026-07",
+    relatedCases: ["domain-cannot-resolve"],
     category: "network",
     title: "浏览器报证书错误 / HTTPS 打不开",
     summary: "定位证书链、有效期、SNI、协议版本",
@@ -82,6 +103,10 @@ export const cheatsheets: Cheatsheet[] = [
   },
   {
     slug: "server-slow-latency",
+    durationMinutes: 40,
+    difficulty: "intermediate",
+    prereq: ["可 ssh 登录目标", "知道服务的端口 + 进程名"],
+    lastReviewed: "2026-07",
     category: "network",
     title: "服务器延迟高 / 卡顿",
     summary: "分辨到底是网络路径还是服务端问题",
@@ -96,6 +121,11 @@ export const cheatsheets: Cheatsheet[] = [
   },
   {
     slug: "port-open-check",
+    durationMinutes: 5,
+    difficulty: "beginner",
+    prereq: ["已知目标 IP + 端口", "telnet / nc / curl 其中之一"],
+    lastReviewed: "2026-07",
+    relatedCases: ["connection-refused", "connection-timeout"],
     category: "network",
     title: "服务端口是否开放 · 远端/本机双向验证",
     summary: "远端端口 → 本地监听 → 进程",
@@ -109,6 +139,10 @@ export const cheatsheets: Cheatsheet[] = [
   },
   {
     slug: "packet-loss-hunt",
+    durationMinutes: 60,
+    difficulty: "advanced",
+    prereq: ["可 ssh 登录源 + 目标两端", "traceroute 出网"],
+    lastReviewed: "2026-07",
     category: "network",
     title: "间歇性丢包 / 抖动定位",
     summary: "把丢包点从'感觉'变成'第几跳、第几秒'",
@@ -123,6 +157,10 @@ export const cheatsheets: Cheatsheet[] = [
   },
   {
     slug: "cdn-source-mismatch",
+    durationMinutes: 30,
+    difficulty: "intermediate",
+    prereq: ["账号登录 CDN 控制台", "源站可独立直连验证"],
+    lastReviewed: "2026-07",
     category: "network",
     title: "CDN 回源 / 源站与边缘不一致",
     summary: "静态资源过期 / 边缘节点异常时的定位链",
@@ -136,6 +174,10 @@ export const cheatsheets: Cheatsheet[] = [
   },
   {
     slug: "container-network-broken",
+    durationMinutes: 30,
+    difficulty: "intermediate",
+    prereq: ["docker 已安装并运行", "可访问容器宿主机 shell"],
+    lastReviewed: "2026-07",
     category: "network",
     title: "容器/K8s 内部访问不通",
     summary: "Pod → Service → Ingress 分层定位",
@@ -172,6 +214,10 @@ export const cheatsheets: Cheatsheet[] = [
   },
   {
     slug: "ntp-time-drift",
+    durationMinutes: 15,
+    difficulty: "beginner",
+    prereq: ["root/sudo 权限", "知道当前时区要求"],
+    lastReviewed: "2026-07",
     category: "network",
     title: "时间不同步导致的诡异问题",
     summary: "证书过期误报 / JWT 失效 / K8s 认证失败常见成因",
@@ -185,6 +231,11 @@ export const cheatsheets: Cheatsheet[] = [
 
   {
     slug: "connection-refused",
+    durationMinutes: 20,
+    difficulty: "beginner",
+    prereq: ["目标 IP + 端口", "可 ping/ssh 目标机器"],
+    lastReviewed: "2026-07",
+    relatedCases: ["port-open-check", "connection-timeout"],
     category: "network",
     title: "connect: connection refused / 端口拒绝连接",
     summary: "分四层定位：服务没起 / 只绑 127.0.0.1 / 防火墙拒 / 安全组拦",
@@ -201,6 +252,11 @@ export const cheatsheets: Cheatsheet[] = [
   },
   {
     slug: "connection-timeout",
+    durationMinutes: 25,
+    difficulty: "intermediate",
+    prereq: ["目标 IP + 端口", "可 tracepath 路由诊断"],
+    lastReviewed: "2026-07",
+    relatedCases: ["port-open-check", "connection-refused", "packet-loss-hunt"],
     category: "network",
     title: "连接超时 · timeout / no route to host",
     summary: "TCP 握手第一步 SYN 就没回应，从路由 → 防火墙 → 云 ACL 逐层查",
@@ -217,6 +273,10 @@ export const cheatsheets: Cheatsheet[] = [
   },
   {
     slug: "tcp-retransmit-loss",
+    durationMinutes: 45,
+    difficulty: "advanced",
+    prereq: ["tcpdump 可执行", "两端均有 shell 访问"],
+    lastReviewed: "2026-07",
     category: "network",
     title: "网络时通时不通 · 抓包定位 TCP 重传/丢包",
     summary: "用 tcpdump + Wireshark 看重传率，判断是丢包还是应用慢",
@@ -233,6 +293,10 @@ export const cheatsheets: Cheatsheet[] = [
   },
   {
     slug: "mtu-blackhole",
+    durationMinutes: 35,
+    difficulty: "advanced",
+    prereq: ["ssh 到两端", "可调 MTU（root 权限）"],
+    lastReviewed: "2026-07",
     category: "network",
     title: "小包通大包卡 · MTU 黑洞排查",
     summary: "SSH 能连但 scp 卡死、SSL 握手一半断——典型 MTU/PMTUD 问题",
@@ -248,6 +312,10 @@ export const cheatsheets: Cheatsheet[] = [
   },
   {
     slug: "arp-ip-conflict",
+    durationMinutes: 15,
+    difficulty: "intermediate",
+    prereq: ["二层可达目标网段", "arping / arp-scan 可用"],
+    lastReviewed: "2026-07",
     category: "network",
     title: "IP 冲突 / 网关 ARP 异常",
     summary: "同一 IP 被两台机器抢，或网关 MAC 突然变了",

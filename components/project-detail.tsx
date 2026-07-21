@@ -2,6 +2,7 @@ import Link from "next/link";
 import { Star, Github, ExternalLink, Terminal, Layers, Languages } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Markdown } from "@/components/markdown";
+import { FavoriteButton } from "@/components/favorites-provider";
 import {
   type GitHubProject,
   securityAreas,
@@ -39,26 +40,34 @@ export async function ProjectDetail({ project, readme }: ProjectDetailProps) {
           </span>
         </div>
 
-        <h1 className="text-3xl md:text-4xl font-bold">{project.name}</h1>
-        <p className="text-lg text-muted-foreground">{project.description}</p>
+        <h1 className="text-2xl md:text-3xl lg:text-4xl font-bold break-words">{project.name}</h1>
+        <p className="text-base md:text-lg text-muted-foreground break-words">{project.description}</p>
 
         <div className="flex flex-wrap items-center gap-2">
           <a
             href={project.url}
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-primary text-primary-foreground text-sm hover:bg-primary/90 transition-colors"
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-primary text-primary-foreground text-sm hover:bg-primary/90 transition-colors min-w-0 max-w-full"
           >
-            <Github className="h-4 w-4" />
-            <span className="font-mono">{project.owner}/{project.repo}</span>
-            <ExternalLink className="h-3 w-3 ml-0.5" />
+            <Github className="h-4 w-4 shrink-0" />
+            <span className="font-mono truncate">{project.owner}/{project.repo}</span>
+            <ExternalLink className="h-3 w-3 ml-0.5 shrink-0" />
           </a>
           {project.installCommand && (
-            <code className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-secondary/50 border border-border/60 text-xs font-mono">
-              <Terminal className="h-3.5 w-3.5 text-muted-foreground" />
-              {project.installCommand}
+            <code className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-secondary/50 border border-border/60 text-xs font-mono break-all min-w-0 max-w-full">
+              <Terminal className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+              <span className="break-all">{project.installCommand}</span>
             </code>
           )}
+          {/* Star — same FavoriteButton shape used by tool/cheatsheet pages. */}
+          <FavoriteButton
+            kind="project"
+            slug={`${project.owner}/${project.repo}`}
+            label={project.name}
+            hint={project.description}
+            className="w-9 h-9 min-h-0 min-w-0"
+          />
         </div>
 
         {project.topics.length > 0 && (
@@ -91,22 +100,24 @@ export async function ProjectDetail({ project, readme }: ProjectDetailProps) {
       )}
 
       {/* README or fallback */}
-      <section>
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-xl font-semibold flex items-center gap-2">
+      <section className="min-w-0">
+        <div className="flex flex-wrap items-center justify-between gap-2 mb-4">
+          <h2 className="text-lg md:text-xl font-semibold flex items-center gap-2">
             <Layers className="h-5 w-5 text-primary" />
             {project.kind === "skill" ? "SKILL.md / README" : "README"}
           </h2>
-          <span className="text-xs text-muted-foreground">
-            来源：<a href={project.url} target="_blank" rel="noopener noreferrer" className="hover:text-primary">github.com/{project.owner}/{project.repo}</a>
+          <span className="text-xs text-muted-foreground break-all">
+            来源：<a href={project.url} target="_blank" rel="noopener noreferrer" className="hover:text-primary break-all">github.com/{project.owner}/{project.repo}</a>
           </span>
         </div>
 
-        {readme ? (
-          <Markdown source={readme} project={project} />
-        ) : (
-          <Fallback project={project} />
-        )}
+        <div className="min-w-0 overflow-hidden">
+          {readme ? (
+            <Markdown source={readme} project={project} />
+          ) : (
+            <Fallback project={project} />
+          )}
+        </div>
       </section>
     </article>
   );

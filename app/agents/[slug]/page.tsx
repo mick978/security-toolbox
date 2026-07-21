@@ -12,8 +12,15 @@ import { ProjectDetail } from "@/components/project-detail";
 export const revalidate = 86400;
 export const dynamicParams = true;
 
+// SSG only the top-N most-starred agent pages; the rest fall through to
+// dynamic / ISR via dynamicParams = true. Matches the strategy in
+// app/mcp/[slug]/page.tsx — full enumeration causes Next 16 + webpack to
+// hit a trace-collector race and abort the build.
 export function generateStaticParams() {
-  return agentProjects.map((p) => ({ slug: p.slug }));
+  return [...agentProjects]
+    .sort((a, b) => b.stars - a.stars)
+    .slice(0, 6)
+    .map((p) => ({ slug: p.slug }));
 }
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }) {

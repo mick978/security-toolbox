@@ -190,7 +190,7 @@ export default function IpIntelClient() {
                   onClick={copyJson}
                   className="inline-flex items-center gap-1.5 rounded-md border border-border bg-secondary/40 px-4 py-2 text-sm hover:bg-secondary"
                 >
-                  {copied ? <Check className="h-4 w-4 text-emerald-400" /> : <Copy className="h-4 w-4" />}
+                  {copied ? <Check className="h-4 w-4 text-emerald-700 dark:text-emerald-400" /> : <Copy className="h-4 w-4" />}
                   {copied ? "已复制" : "复制 JSON"}
                 </button>
               </>
@@ -198,12 +198,12 @@ export default function IpIntelClient() {
           </div>
 
           {err && (
-            <div className="mt-3 rounded-md border border-red-500/40 bg-red-500/10 px-3 py-2 text-xs text-red-300">
+            <div className="mt-3 rounded-md border border-red-500/40 bg-red-500/10 px-3 py-2 text-xs text-red-700 dark:text-red-300">
               {err}
             </div>
           )}
           {truncatedFrom && (
-            <div className="mt-3 rounded-md border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-xs text-amber-200">
+            <div className="mt-3 rounded-md border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-xs text-amber-700 dark:text-amber-200">
               ⚠️ 检测到 {truncatedFrom} 个 IP，已截取前 100 个查询（受上游速率限制）。
             </div>
           )}
@@ -236,7 +236,7 @@ export default function IpIntelClient() {
             <li><span className="text-foreground">地理位置</span>：国家 / 省 / 市，配合 ASN 判断归属运营商或云厂商。</li>
             <li><span className="text-foreground">Proxy / Hosting</span>：ip-api 标记该 IP 是否为已知代理 / VPN / 云主机段。判断"是不是真人 IP"重要参考。</li>
             <li><span className="text-foreground">Shodan Ports</span>：Shodan 上一次扫描该 IP 时看到的开放端口。有 22/3389/6379 需重点关注。</li>
-            <li><span className="text-foreground">Vulns (CVE)</span>：Shodan 根据端口 banner 匹配到的已知 CVE。<span className="text-red-300 font-medium">出现 CVE 编号说明该主机存在已公开漏洞</span>。</li>
+            <li><span className="text-foreground">Vulns (CVE)</span>：Shodan 根据端口 banner 匹配到的已知 CVE。<span className="text-red-700 dark:text-red-300 font-medium">出现 CVE 编号说明该主机存在已公开漏洞</span>。</li>
             <li><span className="text-foreground">Tags</span>：Shodan 打的标签，例如 <span className="font-mono">tor</span>、<span className="font-mono">vpn</span>、<span className="font-mono">honeypot</span>、<span className="font-mono">cdn</span>。</li>
           </ul>
         </div>
@@ -247,9 +247,9 @@ export default function IpIntelClient() {
 
 function SumCell({ label, value, tone = "muted" }: { label: string; value: number; tone?: "ok" | "warn" | "danger" | "muted" }) {
   const toneCls = {
-    ok: "text-emerald-300 border-emerald-500/40 bg-emerald-500/10",
-    warn: "text-amber-200 border-amber-500/40 bg-amber-500/10",
-    danger: "text-red-300 border-red-500/40 bg-red-500/10",
+    ok: "text-emerald-700 dark:text-emerald-300 border-emerald-500/40 bg-emerald-500/10",
+    warn: "text-amber-700 dark:text-amber-200 border-amber-500/40 bg-amber-500/10",
+    danger: "text-red-700 dark:text-red-300 border-red-500/40 bg-red-500/10",
     muted: "text-muted-foreground border-border bg-secondary/30",
   }[tone];
   return (
@@ -280,7 +280,7 @@ function ResultRow({ row, single }: { row: IpIntelRow; single: boolean }) {
             </Badge>
           )}
           {!row.ok && (
-            <Badge className="text-xs border-red-500/60 text-red-300 bg-red-500/10">
+            <Badge className="text-xs border-red-500/60 text-red-700 dark:text-red-300 bg-red-500/10">
               查询失败
             </Badge>
           )}
@@ -289,9 +289,9 @@ function ResultRow({ row, single }: { row: IpIntelRow; single: boolean }) {
               key={f.label}
               className={cn(
                 "text-xs",
-                f.tone === "danger" && "border-red-500/60 text-red-300 bg-red-500/10",
-                f.tone === "warn" && "border-amber-500/60 text-amber-200 bg-amber-500/10",
-                f.tone === "info" && "border-sky-500/60 text-sky-300 bg-sky-500/10",
+                f.tone === "danger" && "border-red-500/60 text-red-700 dark:text-red-300 bg-red-500/10",
+                f.tone === "warn" && "border-amber-500/60 text-amber-700 dark:text-amber-200 bg-amber-500/10",
+                f.tone === "info" && "border-sky-500/60 text-sky-700 dark:text-sky-300 bg-sky-500/10",
               )}
             >
               {f.label}
@@ -300,7 +300,7 @@ function ResultRow({ row, single }: { row: IpIntelRow; single: boolean }) {
         </div>
 
         {row.error && (
-          <div className="text-xs text-red-300 mb-2">{row.error}</div>
+          <div className="text-xs text-red-700 dark:text-red-300 mb-2">{row.error}</div>
         )}
 
         <div className={cn("grid gap-3 text-xs", single ? "md:grid-cols-2" : "md:grid-cols-3")}>
@@ -333,7 +333,7 @@ function ResultRow({ row, single }: { row: IpIntelRow; single: boolean }) {
 
         {row.vulns && row.vulns.length > 0 && (
           <div className="mt-3 pt-3 border-t border-red-500/30">
-            <div className="flex items-center gap-1.5 text-xs text-red-300 mb-1.5">
+            <div className="flex items-center gap-1.5 text-xs text-red-700 dark:text-red-300 mb-1.5">
               <AlertTriangle className="h-3.5 w-3.5" /> 已知 CVE（Shodan InternetDB · {row.vulns.length} 项）
             </div>
             <div className="flex flex-wrap gap-1">
@@ -343,7 +343,7 @@ function ResultRow({ row, single }: { row: IpIntelRow; single: boolean }) {
                   href={`https://nvd.nist.gov/vuln/detail/${v}`}
                   target="_blank"
                   rel="noreferrer"
-                  className="font-mono text-xs px-1.5 py-0.5 rounded border border-red-500/40 bg-red-500/10 text-red-300 hover:bg-red-500/20"
+                  className="font-mono text-xs px-1.5 py-0.5 rounded border border-red-500/40 bg-red-500/10 text-red-700 dark:text-red-300 hover:bg-red-500/20"
                 >
                   {v}
                 </a>

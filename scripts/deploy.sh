@@ -29,10 +29,14 @@ TARBALL="/tmp/security-toolbox-${STAMP}.tar.gz"
 log()  { printf '\033[1;36m[deploy]\033[0m %s\n' "$*"; }
 fail() { printf '\033[1;31m[fail ]\033[0m %s\n' "$*" >&2; exit 1; }
 
-# ---------- 1) local build ----------
-log "building (standalone) in $HERE"
-cd "$HERE"
-npm run build >/dev/null
+# ---------- 1) local build (skipped if SKIP_LOCAL_BUILD=1) ----------
+if [[ "${SKIP_LOCAL_BUILD:-0}" == "1" ]]; then
+  log "SKIP_LOCAL_BUILD=1 — assume .next/standalone + .next/static already built"
+else
+  log "building (standalone) in $HERE"
+  cd "$HERE"
+  npm run build >/dev/null
+fi
 
 [[ -d .next/standalone ]] || fail ".next/standalone missing — check next.config.mjs output:'standalone'"
 [[ -d .next/static     ]] || fail ".next/static missing"

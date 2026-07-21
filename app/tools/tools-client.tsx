@@ -3,13 +3,15 @@
 import { useMemo, useState, useEffect } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import Link from "next/link";
-import * as Icons from "lucide-react";
 import { tools, categories, type CategorySlug, type Difficulty, type Platform } from "@/lib/tools";
 import { executorBySlug } from "@/lib/executors";
+import { categoryColor } from "@/lib/category-colors";
+import { difficultyLabel, platformLabel } from "@/lib/labels";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
-import { Search, X, Zap, Copy, ExternalLink } from "lucide-react";
+import { Search, X, Zap, ExternalLink } from "lucide-react";
+import { iconByName } from "@/lib/icon-map";
 
 export default function ToolsClient() {
   const params = useSearchParams();
@@ -83,7 +85,7 @@ export default function ToolsClient() {
             全部
           </FilterChip>
           {categories.map((c) => {
-            const Icon = (Icons as any)[c.icon] ?? Icons.Circle;
+            const Icon = iconByName(c.icon);
             return (
               <FilterChip
                 key={c.slug}
@@ -104,7 +106,7 @@ export default function ToolsClient() {
           <span className="text-muted-foreground">平台</span>
           {(["all", "linux", "macos", "windows", "web"] as const).map((p) => (
             <FilterChip key={p} active={platform === p} onClick={() => setPlatform(p)} small>
-              {p}
+              {platformLabel(p)}
             </FilterChip>
           ))}
         </div>
@@ -112,7 +114,7 @@ export default function ToolsClient() {
           <span className="text-muted-foreground">难度</span>
           {(["all", "easy", "medium", "hard"] as const).map((d) => (
             <FilterChip key={d} active={diff === d} onClick={() => setDiff(d)} small>
-              {d}
+              {d === "all" ? "全部" : difficultyLabel(d)}
             </FilterChip>
           ))}
         </div>
@@ -124,11 +126,12 @@ export default function ToolsClient() {
           没有匹配的工具，换个关键词或清空过滤条件。
         </div>
       ) : (
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 stagger-list">
           {filtered.map((t) => {
             const catObj = categories.find((c) => c.slug === t.category)!;
-            const Icon = (Icons as any)[catObj.icon] ?? Icons.Circle;
+            const Icon = iconByName(catObj.icon);
             const runnable = !!executorBySlug(t.slug);
+            const palette = categoryColor(t.category);
             return (
               <Link key={t.slug} href={`/tools/${t.slug}`} className="group">
                 <Card className="h-full transition-all hover:border-primary/60 hover:shadow-lg hover:shadow-primary/5">
@@ -136,19 +139,19 @@ export default function ToolsClient() {
                     {/* Category & Badges */}
                     <div className="flex items-center justify-between mb-2">
                       <div className="flex items-center gap-2">
-                        <div className={cn("flex items-center justify-center w-8 h-8 rounded-lg", catObj.accent === "text-red-400" ? "bg-red-500/10" : "bg-primary/10")}>
-                          <Icon className={cn("h-4 w-4", catObj.accent)} />
+                        <div className={cn("flex items-center justify-center w-8 h-8 rounded-lg", palette.bgSoft)}>
+                          <Icon className={cn("h-4 w-4", palette.text)} aria-hidden="true" />
                         </div>
                         <span className="text-xs text-muted-foreground">{catObj.name}</span>
                       </div>
                       <div className="flex gap-1">
                         {runnable && (
-                          <span className="inline-flex items-center gap-0.5 rounded-full border border-yellow-500/40 bg-yellow-400/15 px-1.5 py-0.5 text-[10px] font-medium text-yellow-300">
+                          <span className="inline-flex items-center gap-0.5 rounded-full border border-yellow-500/40 bg-yellow-400/15 px-1.5 py-0.5 text-[10px] font-medium text-yellow-700 dark:text-yellow-300">
                             <Zap className="h-2.5 w-2.5" />
                           </span>
                         )}
                         <Badge className="text-[10px]">
-                          {t.difficulty}
+                          {difficultyLabel(t.difficulty)}
                         </Badge>
                       </div>
                     </div>

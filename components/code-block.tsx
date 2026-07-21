@@ -17,7 +17,7 @@ export function CodeBlock({ cmd, className }: { cmd: string; className?: string 
     }
   };
   return (
-    <div className={cn("group relative rounded-md border border-border/60 bg-black/40", className)}>
+    <div className={cn("group relative rounded-md border border-border/60 bg-secondary/40 dark:bg-black/60", className)}>
       <pre className="overflow-x-auto p-3 pr-12 text-xs font-mono text-foreground">
         <code>{cmd}</code>
       </pre>

@@ -1,40 +1,49 @@
 export const dynamic = "force-dynamic";
 
 import Link from "next/link";
-import * as Icons from "lucide-react";
+import {
+  ChevronRight, AlertTriangle, Search, Zap, Cloud, Boxes, Smartphone, Waypoints,
+  Network, ArrowRight, BookOpen, Clock, Shield,
+  Info, Siren,
+  Globe, Swords, MonitorSmartphone,
+} from "lucide-react";
 import { cheatsheets, caseCategories, casesByCategory } from "@/lib/cheatsheets";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { ChevronRight, AlertTriangle, ShieldAlert, Search, Zap, Server, Cloud, Boxes, Smartphone, Waypoints, Network, ArrowRight, BookOpen, Clock, Shield } from "lucide-react";
 
 export const metadata = {
   title: "场景速查 · SecToolbox",
   description: "按典型排查场景组织的实战 SOP · 网络 / 攻击 / 系统 / 云安全 / K8s / 移动抓包 / 内网横向",
 };
 
+/* Severity chip style. `Icon` is now a Lucide component reference (was an
+ * emoji string) so the chrome and Arial-rendering issue is gone — every
+ * severity reads identically across macOS / Windows / Linux / mobile. */
 const sevStyle = {
-  info: { label: "参考", cls: "bg-blue-500/10 text-blue-500 border-blue-500/30", icon: "📘" },
-  warn: { label: "警告", cls: "bg-amber-500/10 text-amber-500 border-amber-500/30", icon: "⚠️" },
-  danger: { label: "紧急", cls: "bg-red-500/10 text-red-500 border-red-500/30", icon: "🚨" },
+  info:   { label: "参考",  cls: "bg-blue-500/10 text-blue-500 border-blue-500/30",   Icon: Info },
+  warn:   { label: "警告",  cls: "bg-amber-500/10 text-amber-500 border-amber-500/30", Icon: AlertTriangle },
+  danger: { label: "紧急",  cls: "bg-red-500/10 text-red-500 border-red-500/30",       Icon: Siren },
 };
 
-// Category visual config
-const categoryVisuals: Record<string, { gradient: string; iconBg: string; emoji: string }> = {
-  network: { gradient: "from-blue-500/20 to-cyan-500/20", iconBg: "bg-blue-500/10", emoji: "🌐" },
-  attack: { gradient: "from-red-500/20 to-orange-500/20", iconBg: "bg-red-500/10", emoji: "⚔️" },
-  system: { gradient: "from-purple-500/20 to-pink-500/20", iconBg: "bg-purple-500/10", emoji: "🖥️" },
-  cloud: { gradient: "from-sky-500/20 to-blue-500/20", iconBg: "bg-sky-500/10", emoji: "☁️" },
-  k8s: { gradient: "from-indigo-500/20 to-violet-500/20", iconBg: "bg-indigo-500/10", emoji: "☸️" },
-  mobile: { gradient: "from-emerald-500/20 to-teal-500/20", iconBg: "bg-emerald-500/10", emoji: "📱" },
-  lateral: { gradient: "from-orange-500/20 to-amber-500/20", iconBg: "bg-orange-500/10", emoji: "🕸️" },
+/* Per-category icon + gradient pair. The icon is a Lucide component so it
+ * keeps its proportions when the chip is shrunk (h-4 / h-7) and matches the
+ * rest of the design system. */
+const categoryVisuals: Record<string, { gradient: string; iconBg: string; Icon: typeof Globe }> = {
+  network:  { gradient: "from-blue-500/20 to-cyan-500/20",     iconBg: "bg-blue-500/10",    Icon: Globe },
+  attack:   { gradient: "from-red-500/20 to-orange-500/20",    iconBg: "bg-red-500/10",     Icon: Swords },
+  system:   { gradient: "from-purple-500/20 to-pink-500/20",   iconBg: "bg-purple-500/10",  Icon: MonitorSmartphone },
+  cloud:    { gradient: "from-sky-500/20 to-blue-500/20",      iconBg: "bg-sky-500/10",     Icon: Cloud },
+  k8s:      { gradient: "from-indigo-500/20 to-violet-500/20", iconBg: "bg-indigo-500/10",  Icon: Boxes },
+  mobile:   { gradient: "from-emerald-500/20 to-teal-500/20",  iconBg: "bg-emerald-500/10", Icon: Smartphone },
+  lateral:  { gradient: "from-orange-500/20 to-amber-500/20",  iconBg: "bg-orange-500/10",  Icon: Waypoints },
 };
 
 export default function CheatsheetPage() {
   return (
     <div className="min-h-screen">
       {/* Hero Section */}
-      <section className="relative overflow-hidden border-b border-border/60">
-        <div className="absolute inset-0 hero-gradient opacity-50" />
+      <section className="relative overflow-hidden border-b border-border/60 rounded-b-2xl">
+        <div className="absolute inset-0 hero-gradient-animated opacity-70" />
         <div className="absolute inset-0 grid-bg opacity-30" />
         <div className="container relative py-16 lg:py-20">
           <Badge className="mb-4 border-primary/40 text-primary bg-primary/10">
@@ -50,8 +59,9 @@ export default function CheatsheetPage() {
             每个案例都是经过验证的排查流程，助你快速定位和解决问题。
           </p>
 
-          {/* Stats */}
-          <div className="mt-8 grid grid-cols-2 md:grid-cols-4 gap-4 max-w-3xl">
+          {/* Stats — text-only (matches app/page.tsx hero auxiliaries).
+              tabular-nums keeps digit columns visually aligned. */}
+          <div className="mt-block grid grid-cols-2 md:grid-cols-4 gap-x-8 gap-y-4 max-w-3xl">
             {[
               { value: cheatsheets.length.toString(), label: "排查案例", icon: BookOpen },
               { value: caseCategories.length.toString(), label: "场景分类", icon: Shield },
@@ -60,13 +70,11 @@ export default function CheatsheetPage() {
             ].map((stat) => {
               const Icon = stat.icon;
               return (
-                <div key={stat.label} className="flex items-center gap-3 p-3 rounded-lg bg-secondary/30 border border-border/40">
-                  <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-primary/10">
-                    <Icon className="h-5 w-5 text-primary" />
-                  </div>
+                <div key={stat.label} className="flex items-center gap-2.5">
+                  <Icon className="h-4 w-4 text-primary shrink-0" aria-hidden="true" />
                   <div>
-                    <div className="text-2xl font-bold">{stat.value}</div>
-                    <div className="text-xs text-muted-foreground">{stat.label}</div>
+                    <div className="text-xl md:text-2xl font-bold tabular-nums leading-none">{stat.value}</div>
+                    <div className="text-xs text-muted-foreground mt-1">{stat.label}</div>
                   </div>
                 </div>
               );
@@ -84,7 +92,7 @@ export default function CheatsheetPage() {
                   href={`#${cc.slug}`}
                   className="inline-flex items-center gap-2 px-4 py-2 rounded-full border border-border/60 bg-secondary/30 text-sm hover:border-primary/60 hover:bg-primary/10 transition-all"
                 >
-                  <span>{visual?.emoji}</span>
+                  {visual?.Icon && <visual.Icon className="h-4 w-4" aria-hidden="true" />}
                   <span>{cc.name}</span>
                   <Badge className="ml-1 text-[10px]">{n}</Badge>
                 </a>
@@ -98,7 +106,6 @@ export default function CheatsheetPage() {
       <section className="container py-12">
         <div className="space-y-16">
           {caseCategories.map((cc) => {
-            const Icon = (Icons as any)[cc.icon] ?? ShieldAlert;
             const list = casesByCategory(cc.slug);
             const visual = categoryVisuals[cc.slug];
 
@@ -109,7 +116,7 @@ export default function CheatsheetPage() {
                   <div className={`absolute inset-0 bg-gradient-to-r ${visual?.gradient} opacity-50`} />
                   <div className="relative flex items-center gap-4">
                     <div className={`flex items-center justify-center w-14 h-14 rounded-xl ${visual?.iconBg} border border-border/40`}>
-                      <span className="text-3xl">{visual?.emoji}</span>
+                      {visual?.Icon && <visual.Icon className="h-7 w-7 text-foreground/80" aria-hidden="true" />}
                     </div>
                     <div>
                       <h2 className="text-2xl font-bold flex items-center gap-2">
@@ -153,7 +160,7 @@ export default function CheatsheetPage() {
                               </div>
                               {sev && (
                                 <span className={`text-[10px] px-2 py-0.5 rounded border font-mono shrink-0 ${sev.cls}`}>
-                                  {sev.icon} {sev.label}
+                                  {sev.Icon && <sev.Icon className="h-3 w-3" aria-hidden="true" />} {sev.label}
                                 </span>
                               )}
                             </div>

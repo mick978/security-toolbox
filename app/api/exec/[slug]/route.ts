@@ -2,10 +2,18 @@
 // POST /api/exec/<slug>
 // body: { args: { ...form } }
 // returns: { ok, stdout, stderr, code, durationMs, tookMs }
+//
+// Auth: this route is wrapped by middleware.ts which rejects unauthenticated
+// requests at the edge (see PUBLIC_PATHS in middleware.ts — /api/exec is NOT
+// included). As defence-in-depth, this route also re-checks the JWT cookie
+// against AUTH_SECRET. If middleware ever silently fails (e.g. edge runtime
+// hiccup or a new path mistakenly added to PUBLIC_PREFIXES), the inner
+// check still blocks execution. Both layers must agree to proceed.
 
 import { NextRequest, NextResponse } from "next/server";
 import { execFile } from "node:child_process";
 import { executorBySlug, validateArg } from "@/lib/executors";
+import { verifyToken, AUTH_COOKIE_NAME } from "@/lib/auth";
 import { checkRateLimit } from "@/lib/rate-limit";
 
 export const runtime = "nodejs";
@@ -72,6 +80,19 @@ function run(binary: string, args: string[], timeoutMs: number): Promise<RunResu
 
 export async function POST(req: NextRequest, ctx: { params: Promise<{ slug: string }> }) {
   const { slug } = await ctx.params;
+
+  // Defence-in-depth: re-check JWT here even though middleware already does.
+  // We use the Node runtime's crypto-based verifier (`verifyToken`), which is
+  // symmetric with `verifyTokenEdge`. Both honour the same AUTH_SECRET.
+  const cookieToken = req.cookies.get(AUTH_COOKIE_NAME)?.value;
+  const user = verifyToken(cookieToken);
+  if (!user) {
+    return NextResponse.json(
+      { ok: false, error: "unauthenticated" },
+      { status: 401 },
+    );
+  }
+
   const spec = executorBySlug(slug);
   if (!spec) {
     return NextResponse.json({ ok: false, error: `工具 ${slug} 不在网页执行器白名单内` }, { status: 404 });

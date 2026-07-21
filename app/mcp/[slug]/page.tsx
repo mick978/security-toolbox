@@ -33,11 +33,18 @@ function isListableSlug(slug: string) {
   return undefined;
 }
 
+// SSG only the top-N most-starred pages per kind. The rest fall through to
+// dynamic (ISR via `dynamicParams = true`). The full list used to be ~50+
+// pages which on Next 16 + webpack triggers a race in the trace collector
+// (`_not-found/page.js.nft.json` ENOENT). 6 + 6 + 6 = 18 is below the
+// race threshold and still covers the bulk of search-engine traffic.
 export function generateStaticParams() {
+  const top = (arr: typeof mcpProjects, n: number) =>
+    [...arr].sort((a, b) => b.stars - a.stars).slice(0, n).map((p) => ({ slug: p.slug }));
   return [
-    ...mcpProjects.map((p) => ({ slug: p.slug })),
-    ...skillProjects.map((p) => ({ slug: p.slug })),
-    ...networkProjects.map((p) => ({ slug: p.slug })),
+    ...top(mcpProjects, 6),
+    ...top(skillProjects, 6),
+    ...top(networkProjects, 6),
   ];
 }
 

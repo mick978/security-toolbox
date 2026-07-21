@@ -1,10 +1,11 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Shield, Search, BookOpenText, Home, Globe, Moon, Sun, Github, Star, Bot, Wrench, Menu, X } from "lucide-react";
+import { Shield, Search, BookOpenText, Home, Globe, Moon, Sun, Github, Bot, Wrench, Menu, X, Palette, Monitor } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useThemeStore, ACCENT_PRESETS, type AccentName } from "@/lib/theme";
 import { CommandMenu } from "@/components/command-menu";
 
 const nav = [
@@ -16,41 +17,44 @@ const nav = [
   { href: "/ip-intel", label: "IP 情报", icon: Globe },
 ];
 
-const THEME_KEY = "sectoolbox.theme";
+const THEME_CYCLE: Array<"light" | "dark" | "system"> = ["light", "dark", "system"];
 
 export function Header() {
   const pathname = usePathname();
   const [cmdOpen, setCmdOpen] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
-  // Track an explicit user choice; `null` until we read localStorage so we
-  // don't paint the wrong icon during hydration.
-  const [theme, setTheme] = useState<"dark" | "light" | null>(null);
+  const [accentOpen, setAccentOpen] = useState(false);
 
-  // Sync from localStorage on mount and apply to <html>.
+  // Use the shared store from lib/theme so desktop + mobile stay in sync.
+  // `hydrated` is false until the localStorage read completes — we gate the
+  // theme button on it to avoid hydration flicker.
+  const { mode, accent, effective, hydrated, setTheme, setAccent } = useThemeStore();
+
+  const accentRef = useRef<HTMLDivElement | null>(null);
+
+  // Close accent popover on outside click + Escape.
   useEffect(() => {
-    const saved = (typeof window !== "undefined" && window.localStorage.getItem(THEME_KEY)) as
-      | "dark"
-      | "light"
-      | null;
-    const initial: "dark" | "light" = saved ?? "dark";
-    setTheme(initial);
-    document.documentElement.classList.toggle("dark", initial === "dark");
-  }, []);
+    if (!accentOpen) return;
+    const onDown = (e: MouseEvent) => {
+      if (accentRef.current && !accentRef.current.contains(e.target as Node)) {
+        setAccentOpen(false);
+      }
+    };
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setAccentOpen(false);
+    };
+    document.addEventListener("mousedown", onDown);
+    document.addEventListener("keydown", onKey);
+    return () => {
+      document.removeEventListener("mousedown", onDown);
+      document.removeEventListener("keydown", onKey);
+    };
+  }, [accentOpen]);
 
-  const toggleTheme = () => {
-    const next = theme === "dark" ? "light" : "dark";
-    setTheme(next);
-    document.documentElement.classList.toggle("dark", next === "dark");
-    try {
-      window.localStorage.setItem(THEME_KEY, next);
-    } catch {
-      /* ignore quota errors */
-    }
-  };
-
-  // Close the drawer whenever we route to a new page.
+  // Close drawer + popover whenever we route to a new page.
   useEffect(() => {
     setMenuOpen(false);
+    setAccentOpen(false);
   }, [pathname]);
 
   // Lock body scroll while the drawer is open (mobile only — md+ never opens it).
@@ -63,18 +67,39 @@ export function Header() {
     };
   }, [menuOpen]);
 
+  const cycleTheme = () => {
+    if (!hydrated) return;
+    const current = mode ?? (effective === "dark" ? "dark" : "light");
+    const next = THEME_CYCLE[(THEME_CYCLE.indexOf(current) + 1) % THEME_CYCLE.length];
+    setTheme(next);
+  };
+
+  // Half-disk icon for `system` so users can distinguish it from explicit
+  // dark/light at a glance.
+  const ThemeIcon = !hydrated
+    ? Sun
+    : mode === "system"
+      ? Monitor
+      : effective === "dark"
+        ? Moon
+        : Sun;
+
   return (
     <>
       <header className="sticky top-0 z-40 w-full border-b border-border/60 bg-background/80 backdrop-blur supports-[backdrop-filter]:bg-background/60">
         <div className="container flex h-14 items-center justify-between">
-          {/* Logo */}
+          {/* Logo — the two-line stack used to drift slightly off-centre in
+           * the 14-height bar because the 10px subtitle forced its own
+           * line-height box. `gap-0` + manually pinned baseline (`pb-0.5`
+           * on the subtitle) puts the icon and the word-mark on the
+           * same optical axis regardless of font metrics. */}
           <Link href="/" className="flex items-center gap-2 font-semibold">
             <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-primary/10 border border-primary/20">
               <Shield className="h-5 w-5 text-primary" />
             </div>
-            <div className="flex flex-col">
-              <span className="text-sm font-bold">SecToolbox</span>
-              <span className="hidden md:inline text-[10px] text-muted-foreground font-normal leading-tight">
+            <div className="flex flex-col gap-0 leading-none">
+              <span className="text-sm font-bold leading-none">SecToolbox</span>
+              <span className="hidden md:inline text-[10px] text-muted-foreground font-normal leading-none mt-1">
                 网络安全排查手册
               </span>
             </div>
@@ -119,15 +144,81 @@ export function Header() {
               <kbd className="hidden md:inline-flex rounded bg-background border border-border/60 px-1 py-0.5 text-[10px] font-mono">⌘K</kbd>
             </button>
 
-            {/* Theme Toggle */}
+            {/* Accent picker — opens a popover with the 4 ACCENT_PRESETS.
+                Until now these were dead code: lib/theme.ts defined
+                `setAccent` but nothing called it, so `data-accent` was never
+                set on <html> and the CSS variable swap never happened. */}
+            <div ref={accentRef} className="relative hidden md:block">
+              <button
+                type="button"
+                onClick={() => setAccentOpen((v) => !v)}
+                aria-haspopup="dialog"
+                aria-expanded={accentOpen}
+                aria-label="切换主题色"
+                className="inline-flex min-h-[44px] min-w-[44px] items-center justify-center gap-1.5 rounded-md w-8 h-8 text-muted-foreground hover:text-foreground hover:bg-secondary/60 transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60 focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+              >
+                <span className="inline-flex items-center gap-1">
+                  <Palette className="h-4 w-4" aria-hidden="true" />
+                  <span
+                    aria-hidden="true"
+                    className="inline-block h-3 w-3 rounded-full border border-border/60"
+                    style={{ backgroundColor: ACCENT_PRESETS.find((p) => p.name === accent)?.hex ?? "#7c3aed" }}
+                  />
+                </span>
+              </button>
+              {accentOpen && (
+                <div
+                  role="dialog"
+                  aria-label="选择主题色"
+                  className="absolute right-0 top-full mt-2 w-44 rounded-lg border border-border/60 bg-popover text-popover-foreground shadow-xl p-2 z-50"
+                >
+                  <div className="text-[11px] uppercase tracking-wider text-muted-foreground px-1.5 pb-1.5">
+                    主题色
+                  </div>
+                  <ul className="grid grid-cols-2 gap-1">
+                    {ACCENT_PRESETS.map((p) => {
+                      const active = p.name === accent;
+                      return (
+                        <li key={p.name}>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setAccent(p.name as AccentName);
+                              setAccentOpen(false);
+                            }}
+                            aria-pressed={active}
+                            className={cn(
+                              "w-full inline-flex items-center gap-2 rounded-md px-2 py-1.5 text-xs transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60",
+                              active
+                                ? "bg-primary/15 text-foreground ring-1 ring-primary/40"
+                                : "text-muted-foreground hover:bg-secondary/60 hover:text-foreground",
+                            )}
+                          >
+                            <span
+                              aria-hidden="true"
+                              className="inline-block h-3.5 w-3.5 rounded-full border border-border/60 shrink-0"
+                              style={{ backgroundColor: p.hex }}
+                            />
+                            <span className="truncate">{p.label}</span>
+                          </button>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                </div>
+              )}
+            </div>
+
+            {/* Theme Toggle — cycles light → dark → system. Shared store so
+                desktop + mobile-toolbar stay in lockstep. */}
             <button
-              onClick={toggleTheme}
-              disabled={theme === null}
+              onClick={cycleTheme}
+              disabled={!hydrated}
               className="inline-flex min-h-[44px] min-w-[44px] items-center justify-center rounded-md w-8 h-8 text-muted-foreground hover:text-foreground hover:bg-secondary/60 disabled:opacity-40 transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60 focus-visible:ring-offset-2 focus-visible:ring-offset-background"
-              aria-label={`切换主题（当前：${theme ?? "..."}）`}
+              aria-label={`切换主题（当前：${mode ?? "..."}）`}
             >
               <span className="transition-transform duration-200 hover:rotate-12">
-                {theme === "dark" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+                <ThemeIcon className="h-4 w-4" />
               </span>
             </button>
 
