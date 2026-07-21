@@ -75,9 +75,22 @@ export function ExploreHero({
 }: ExploreHeroProps) {
   return (
     <section className="relative overflow-hidden border-b border-border/60 rounded-b-2xl">
-      {/* Decorative layers — fixed recipe so every page hero looks the same. */}
+      {/* Decorative layers — fixed recipe so every page hero looks the same.
+          The two blur-orb elements give ao.aiolaola.com's signature ambient
+          haze; primary orb in the upper-left + fuchsia orb in the lower-right
+          balance each other visually across the hero. */}
       <div className="absolute inset-0 hero-gradient-animated opacity-70" aria-hidden="true" />
       <div className="absolute inset-0 grid-bg opacity-30" aria-hidden="true" />
+      <div
+        className="blur-orb -top-20 -right-20 bg-primary/40"
+        style={{ background: "hsl(var(--primary) / 0.35)" }}
+        aria-hidden="true"
+      />
+      <div
+        className="blur-orb -bottom-20 -left-20"
+        style={{ background: "#d946ef55" }}
+        aria-hidden="true"
+      />
 
       <div className="container relative py-16 lg:py-20">
         {badge && (
@@ -86,18 +99,16 @@ export function ExploreHero({
           </div>
         )}
 
-        <h1 className="text-4xl md:text-5xl font-bold tracking-tight max-w-4xl">
+        {/* Display heading — Inter Tight + text-balance so multi-line
+            titles wrap with visually equal line widths (ao.aiolaola.com). */}
+        <h1 className="display text-4xl md:text-5xl lg:text-6xl max-w-4xl text-balance">
           {titleLine1 && <>{titleLine1}</>}
-          <span
-            className={cn(
-              "block mt-2 bg-gradient-to-r from-primary via-primary to-primary/70 bg-clip-text text-transparent [text-shadow:_0_0_24px_hsl(var(--primary)/0.35)]",
-            )}
-          >
+          <span className="text-gradient block mt-2">
             {titleLine2}
           </span>
         </h1>
 
-        <div className="mt-4 max-w-3xl text-lg text-muted-foreground">{tldr}</div>
+        <div className="mt-4 max-w-3xl text-lg text-muted-foreground text-pretty">{tldr}</div>
 
         {/* Stats — text-only / tabular-nums / single row on md+ */}
         <div className="mt-block grid grid-cols-2 md:grid-cols-4 gap-x-8 gap-y-4 max-w-3xl">

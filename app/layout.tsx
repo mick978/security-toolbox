@@ -25,12 +25,23 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="zh-CN" suppressHydrationWarning>
       <head>
-        {/* No-flash theme bootstrap. Runs synchronously before paint
-            so dark / light + accent + text-color resolve before the
-            first frame. Reads the same three localStorage keys
-            (sectoolbox.theme, sectoolbox.accent, sectoolbox.text) as
-            lib/theme.ts so the persisted preference is honored
-            before React hydration runs. */}
+        {/* Inter / Fira Code / Inter Tight — preconnect cuts first-paint
+            by ~200ms. Inter Tight is the optical-size variant that gives
+            large headings a more confident silhouette (ao.aiolaola.com style). */}
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+        <link
+          href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Fira+Code:wght@400;500&family=Inter+Tight:wght@600;700;800&display=swap"
+          rel="stylesheet"
+        />
+
+        {/* No-flash theme bootstrap. Runs synchronously before paint so dark
+            / light + accent + text-color resolve before the first frame.
+            Reads the same 7 localStorage keys (sectoolbox.theme,
+            sectoolbox.accent, sectoolbox.text, sectoolbox.fontFamily,
+            sectoolbox.fontSize, sectoolbox.animations, sectoolbox.radius)
+            as lib/theme.ts so the persisted preference is honored before
+            React hydration runs. */}
         <script
           dangerouslySetInnerHTML={{
             __html: `
@@ -39,17 +50,33 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                   var t = localStorage.getItem('sectoolbox.theme');
                   var a = localStorage.getItem('sectoolbox.accent');
                   var x = localStorage.getItem('sectoolbox.text');
-                  var eff = (t === 'light' || t === 'system' && !window.matchMedia('(prefers-color-scheme: dark)').matches) ? 'light' : 'dark';
+                  var f = localStorage.getItem('sectoolbox.fontFamily');
+                  var s = localStorage.getItem('sectoolbox.fontSize');
+                  var an = localStorage.getItem('sectoolbox.animations');
+                  var r = localStorage.getItem('sectoolbox.radius');
+                  var eff = (t === 'light' || (t === 'system' && !window.matchMedia('(prefers-color-scheme: dark)').matches)) ? 'light' : 'dark';
                   var html = document.documentElement;
                   html.classList.toggle('dark', eff === 'dark');
                   if (a) html.dataset.accent = a;
-                  if (x) html.dataset.text = x;
-                  else html.dataset.text = 'default';
+                  html.dataset.text = x || 'default';
+                  html.dataset.font = f || 'sans';
+                  html.dataset.size = s || 'medium';
+                  html.dataset.animations = an || 'on';
+                  html.dataset.radius = r || 'soft';
+                  var fontStacks = {
+                    sans: '"Inter","SF Pro Display",-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",sans-serif',
+                    serif: 'ui-serif,Georgia,Cambria,"Times New Roman","Songti SC",serif',
+                    mono: 'ui-monospace,SFMono-Regular,"SF Mono",Menlo,Consolas,monospace'
+                  };
+                  var sizeMap = { small: '14px', medium: '16px', large: '18px' };
+                  html.style.fontFamily = fontStacks[f || 'sans'];
+                  html.style.fontSize = sizeMap[s || 'medium'];
                 } catch (e) {}
               })();
             `,
           }}
         />
+
         {/* Structured data — keeps search engines from treating us
             as a faceless SPA. SoftwareApplication schema for the
             whole site, plus Organization for the brand profile
@@ -96,12 +123,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         />
       </head>
       <body className="min-h-screen bg-background text-foreground">
-        {/*
-          Skip link — visible only when focused (e.g. when a keyboard user
+        {/* Skip link — visible only when focused (e.g. when a keyboard user
           tabs in). Goes straight to the <main> landmark so users don't
-          have to tab past the header / nav. Styled with the project's
-          existing focus-ring tokens so it integrates without a new style.
-        */}
+          have to tab past the header / nav. */}
         <a
           href="#main-content"
           className="sr-only focus:not-sr-only focus:fixed focus:top-3 focus:left-3 focus:z-[100] focus:px-4 focus:py-2 focus:rounded-md focus:bg-primary focus:text-primary-foreground focus:shadow-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60"
@@ -119,7 +143,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
               {/* Brand */}
               <div>
-                <Link href="/" className="flex items-center gap-2 font-semibold mb-4">
+                <Link href="/" className="flex items-center gap-2 font-semibold mb-4 text-gradient text-xl">
                   <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-primary/10 border border-primary/20">
                     <Shield className="h-5 w-5 text-primary" />
                   </div>
@@ -213,9 +237,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               </div>
             </div>
 
-            {/* Bottom Bar — version / last-commit / changelog all live
-                here so the footer doubles as a "still being maintained"
-                signal that helps users trust the catalog. */}
+            {/* Bottom Bar */}
             <div className="mt-12 pt-6 border-t border-border/60 flex flex-col md:flex-row justify-between items-center gap-4">
               <div className="text-sm text-muted-foreground">
                 © SecToolbox · 面向工程师的网络安全排查手册

@@ -5,7 +5,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
   Shield, Search, BookOpenText, Home, Globe, Github, Bot, Wrench, Menu, X,
-  Sun, Moon, Monitor, Settings as SettingsIcon,
+  Sun, Moon, Sparkles, Settings as SettingsIcon,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useThemeStore } from "@/lib/theme";
@@ -43,7 +43,7 @@ export function Header() {
     setTheme(next);
   };
   const ThemeIcon = !hydrated ? Moon
-                  : mode === "system"  ? Monitor
+                  : mode === "system"  ? Sparkles
                   : effective === "dark" ? Moon
                   : Sun;
 
@@ -141,7 +141,7 @@ export function Header() {
               type="button"
               onClick={cycleTheme}
               disabled={!hydrated}
-              aria-label={`切换主题（当前：${mode ?? "..."}）`}
+              aria-label={`切换主题（当前：${mode === "system" ? "跟随系统" : mode ?? "..."}）`}
               className="inline-flex min-h-[44px] min-w-[44px] items-center justify-center rounded-md w-8 h-8 text-muted-foreground hover:text-foreground hover:bg-secondary/60 disabled:opacity-40 transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60 focus-visible:ring-offset-2 focus-visible:ring-offset-background"
             >
               <span className="transition-transform duration-200 hover:rotate-12">

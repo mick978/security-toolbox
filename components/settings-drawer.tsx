@@ -20,10 +20,10 @@ import { useEffect, useRef } from "react";
 import {
   Sun,
   Moon,
-  Monitor,
+  Sparkles,
   Palette,
   Type,
-  Sparkles,
+  Zap,
   Square,
   ALargeSmall,
   Minus,
@@ -118,7 +118,7 @@ export function SettingsDrawer({ open, onClose }: SettingsDrawerProps) {
             [
               { v: "light", label: "浅色", Icon: Sun },
               { v: "dark", label: "深色", Icon: Moon },
-              { v: "system", label: "跟随", Icon: Monitor },
+              { v: "system", label: "跟随", Icon: Sparkles },
             ] as Array<{ v: ThemeMode; label: string; Icon: typeof Sun }>
           ).map(({ v, label, Icon }) => {
             const active = mode === v;
@@ -258,7 +258,7 @@ export function SettingsDrawer({ open, onClose }: SettingsDrawerProps) {
       </Section>
 
       {/* Animations */}
-      <Section label="动画" icon={<Sparkles className="h-3.5 w-3.5" />}>
+      <Section label="动画" icon={<Zap className="h-3.5 w-3.5" />}>
         <div className="grid grid-cols-2 gap-1.5">
           {(
             [
