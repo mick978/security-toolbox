@@ -106,7 +106,7 @@ export default function NetworkClient() {
               icon={iconByName(area.icon) ?? Activity}
               count={projects.length}
             >
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 stagger-list">
+              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 stagger-list">
                 {projects.map((p, idx) => {
                   /* MCP skills land on /mcp/<slug>; agents on /agents/<slug>;
                    * everything else from the network catalog also lives on

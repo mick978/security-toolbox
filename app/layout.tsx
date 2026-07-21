@@ -141,13 +141,27 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               </div>
             </div>
 
-            {/* Bottom Bar */}
+            {/* Bottom Bar — version / last-commit / changelog all live
+                here so the footer doubles as a "still being maintained"
+                signal that helps users trust the catalog. */}
             <div className="mt-12 pt-6 border-t border-border/60 flex flex-col md:flex-row justify-between items-center gap-4">
               <div className="text-sm text-muted-foreground">
                 © SecToolbox · 面向工程师的网络安全排查手册
               </div>
-              <div className="text-xs text-muted-foreground">
-                MIT License · 开源项目
+              <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-1 text-xs text-muted-foreground">
+                <span className="inline-flex items-center gap-1">
+                  <span className="inline-block h-1.5 w-1.5 rounded-full bg-emerald-500" aria-hidden="true" />
+                  v0.1 · 最近更新 2026-07
+                </span>
+                <a
+                  href="https://github.com/mick978/security-toolbox/blob/main/README.md"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60 rounded"
+                >
+                  更新日志
+                </a>
+                <span>MIT License</span>
               </div>
             </div>
           </div>

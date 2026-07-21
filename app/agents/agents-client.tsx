@@ -101,7 +101,7 @@ export default function AgentsClient() {
               icon={iconByName(area.icon) ?? Bot}
               count={projects.length}
             >
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 stagger-list">
+              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 stagger-list">
                 {projects.map((p, idx) => (
                   <ExploreCard
                     key={p.slug}
