@@ -1,10 +1,20 @@
 "use client";
 
+// /agents — AI Agent catalog page.
+//
+// Visual contract — mirrors app/cheatsheet/page.tsx:
+//   1. Hero: badge + gradient title + TL;DR + text-only stats + area quick-nav
+//   2. Single search field
+//   3. Per-area sections with gradient header + Lucide icon + count
+//   4. Standardized card grid via components/explore-card
+//
+// All color tokens come from lib/explore-palette — that file is the only
+// place where the hue per `SecurityArea` lives. Tweak there to retheme
+// the entire catalog.
+
 import { useMemo, useState } from "react";
-import Link from "next/link";
-import { Card, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Card, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { CopyButton } from "@/components/copy-button";
 import { cn } from "@/lib/utils";
 import {
   agentProjects,
@@ -14,60 +24,30 @@ import {
   formatStars,
 } from "@/lib/github-projects";
 import {
-  Search, X, Bot, Star, Github, ExternalLink, Sparkles, ChevronRight, Wrench,
+  Search, X, Bot, Star, Sparkles, Wrench,
 } from "lucide-react";
 import { iconByName } from "@/lib/icon-map";
+import { exploreBg, exploreGradient } from "@/lib/explore-palette";
+import { ExploreCard } from "@/components/explore-card";
 
-/* Same architecture as app/cheatsheet/page.tsx:
- * 1. Hero — text-only stats (no card surfaces)
- * 2. Area quick-nav chips (anchor scroll into per-area sections)
- * 3. Per-area sections with gradient header + Lucide icon + count chip
- * 4. Card grid — top gradient strip, index #, area chip, install snippet,
- *    topics, footer with stars / repo path / hover-revealed "查看"
- *
- * Compared to the old version this drops the flat surface-card grid and the
- * `surface-hero` panel — neither exists in the cheatsheet reference so the
- * visual systems now agree page to page. */
-
-const AREA_GRADIENTS: Record<string, string> = {
-  recon:      "from-blue-500/20 to-cyan-500/20",
-  "vuln-scan": "from-yellow-500/20 to-amber-500/20",
-  exploit:    "from-red-500/20 to-orange-500/20",
-  defense:    "from-green-500/20 to-emerald-500/20",
-  incident:   "from-orange-500/20 to-rose-500/20",
-  compliance: "from-purple-500/20 to-pink-500/20",
-  general:    "from-cyan-500/20 to-sky-500/20",
-};
-
-const AREA_BG: Record<string, string> = {
-  recon:      "bg-blue-500/10",
-  "vuln-scan": "bg-yellow-500/10",
-  exploit:    "bg-red-500/10",
-  defense:    "bg-green-500/10",
-  incident:   "bg-orange-500/10",
-  compliance: "bg-purple-500/10",
-  general:    "bg-cyan-500/10",
-};
+const areas = securityAreas.filter((a) => a.slug !== "general");
 
 export default function AgentsClient() {
   const [q, setQ] = useState("");
 
-  /* Filter projects by search query. Category filtering is a no-op here on
-   * purpose: cheatsheet groups by category visually but does not let users
-   * "switch category". Users scroll to the area they want; this matches the
-   * mental model of a printed catalog more than a faceted dashboard. */
   const filtered = useMemo(() => {
+    if (!q) return agentProjects;
+    const needle = q.toLowerCase();
     return agentProjects.filter((a) => {
-      if (!q) return true;
       const s = (a.name + a.owner + a.repo + a.description + a.topics.join(" ")).toLowerCase();
-      return s.includes(q.toLowerCase());
+      return s.includes(needle);
     });
   }, [q]);
 
-  /* Group projects by area, preserving `securityAreas` order so the surface
-   * mirrors the safety workflow (recon → vuln-scan → exploit → defense →
-   * incident → compliance). Empty groups are hidden so the user never sees
-   * a category header with zero cards. */
+  /* Group projects by area, preserving `securityAreas` order so the
+   * surface reads as a workflow (recon → vuln-scan → exploit → defense
+   * → incident → compliance). Empty groups are hidden so the user
+   * never sees a category header with zero cards. */
   const byArea = useMemo(() => {
     const map = new Map<SecurityArea, GitHubProject[]>();
     for (const p of filtered) {
@@ -93,20 +73,29 @@ export default function AgentsClient() {
             <Bot className="h-3 w-3 mr-1" aria-hidden="true" />
             AI 驱动 · 智能化安全
           </Badge>
+
+          {/* Gradient + glow on the second title line — same recipe as
+              app/page.tsx so cross-page identity is unmissable. */}
           <h1 className="text-4xl md:text-5xl font-bold tracking-tight">
             网络安全
-            <span className="text-primary"> AI Agent</span>
+            <span className="block mt-2 bg-gradient-to-r from-primary via-primary to-primary/70 bg-clip-text text-transparent [text-shadow:_0_0_24px_hsl(var(--primary)/0.35)]">
+              AI Agent 矩阵
+            </span>
           </h1>
-          <p className="mt-4 max-w-2xl text-lg text-muted-foreground">
-            {agentProjects.length} 个真实开源安全 AI Agent，覆盖信息收集 → 漏洞扫描 → 渗透测试 →
-            防御检测 → 应急响应 → 合规审计全流程，点击卡片查看项目真实 README。
+
+          {/* TL;DR — italic lede in a primary-tinted box, same rhythm
+              as the TL;DR card on each cheatsheet detail page. */}
+          <p className="mt-4 max-w-3xl text-lg text-muted-foreground">
+            {agentProjects.length} 个真实开源安全 AI Agent · 覆盖
+            <span className="text-foreground font-medium"> 信息收集 → 漏洞扫描 → 渗透测试 → 防御检测 → 应急响应 → 合规审计 </span>
+            全流程，<span className="text-foreground font-medium">点击卡片查看真实 README</span>。
           </p>
 
-          {/* Stats — text-only (matches cheatsheet standard) */}
+          {/* Stats — text-only (matches cheatsheet / home standard). */}
           <div className="mt-block grid grid-cols-2 md:grid-cols-4 gap-x-8 gap-y-4 max-w-3xl">
             {[
               { value: agentProjects.length.toString(), label: "安全 AI Agent", icon: Bot },
-              { value: String(byArea.length), label: "专业领域",     icon: Sparkles },
+              { value: String(byArea.length),            label: "专业领域",     icon: Sparkles },
               { value: formatStars(totalStars),          label: "GitHub 总 Star", icon: Star },
               { value: "6+",                              label: "覆盖阶段",       icon: Wrench },
             ].map((stat) => {
@@ -123,7 +112,7 @@ export default function AgentsClient() {
             })}
           </div>
 
-          {/* Area quick-nav */}
+          {/* Area quick-nav — pills that scroll-jump into each section. */}
           <div className="mt-block flex flex-wrap gap-2">
             {byArea.map(({ area, projects }) => {
               const Icon = iconByName(area.icon);
@@ -143,8 +132,7 @@ export default function AgentsClient() {
         </div>
       </section>
 
-      {/* Search — single field lives above the sections so it doesn't
-       *  belong to any one area's filter. Empty q -> show all. */}
+      {/* Search */}
       <section className="container pt-block pb-block">
         <div className="relative max-w-xl">
           <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
@@ -162,7 +150,8 @@ export default function AgentsClient() {
         </div>
       </section>
 
-      {/* Areas — identical layout to cheatsheet per-category sections */}
+      {/* Per-area sections — one block per area, header with gradient
+          strip + icon tile + count, then a 2-col card grid. */}
       <section className="container pb-section">
         <div className="space-y-16">
           {byArea.length === 0 && (
@@ -174,11 +163,10 @@ export default function AgentsClient() {
             const Icon = iconByName(area.icon);
             return (
               <section key={area.slug} id={`area-${area.slug}`} className="scroll-mt-20">
-                {/* Category header */}
                 <div className="relative mb-8 p-6 rounded-xl overflow-hidden">
-                  <div className={`absolute inset-0 bg-gradient-to-r ${AREA_GRADIENTS[area.slug] ?? "from-primary/10 to-primary/5"} opacity-50`} />
+                  <div className={`absolute inset-0 bg-gradient-to-r ${exploreGradient(area.slug)} opacity-50`} />
                   <div className="relative flex items-center gap-4">
-                    <div className={`flex items-center justify-center w-14 h-14 rounded-xl ${AREA_BG[area.slug] ?? "bg-primary/10"} border border-border/40`}>
+                    <div className={`flex items-center justify-center w-14 h-14 rounded-xl ${exploreBg(area.slug)} border border-border/40`}>
                       {Icon && <Icon className="h-7 w-7 text-foreground/80" aria-hidden="true" />}
                     </div>
                     <div>
@@ -190,10 +178,22 @@ export default function AgentsClient() {
                   </div>
                 </div>
 
-                {/* Cards */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 stagger-list">
                   {projects.map((p, idx) => (
-                    <AgentCard key={p.slug} project={p} index={idx} areaSlug={area.slug} />
+                    <ExploreCard
+                      key={p.slug}
+                      index={idx}
+                      hrefPrefix="/agents"
+                      hrefSlug={p.slug}
+                      title={p.name}
+                      description={p.description}
+                      areaSlug={p.area}
+                      stars={p.stars}
+                      owner={p.owner}
+                      repo={p.repo}
+                      topics={p.topics}
+                      installCommand={p.installCommand}
+                    />
                   ))}
                 </div>
               </section>
@@ -202,81 +202,5 @@ export default function AgentsClient() {
         </div>
       </section>
     </div>
-  );
-}
-
-function AgentCard({ project, index, areaSlug }: { project: GitHubProject; index: number; areaSlug: string }) {
-  /* Severity-style accent strip on every card. Lifts from primary/30 →
-   * area color → primary/10, so cards in the same area share a hue but
-   * still stand out from one another. Matches cheatsheet `severity` styling. */
-  const stripFrom = areaSlug === "exploit"        ? "from-red-500 to-orange-500"
-                   : areaSlug === "incident"       ? "from-orange-500 to-rose-500"
-                   : areaSlug === "defense"        ? "from-green-500 to-emerald-500"
-                   : areaSlug === "compliance"     ? "from-purple-500 to-pink-500"
-                   : areaSlug === "vuln-scan"      ? "from-yellow-500 to-amber-500"
-                   : areaSlug === "recon"          ? "from-blue-500 to-cyan-500"
-                   :                                  "from-primary/50 to-primary/20";
-  return (
-    <Link
-      href={`/agents/${project.slug}`}
-      className="group block min-w-0 rounded-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60 focus-visible:ring-offset-2 focus-visible:ring-offset-background"
-      aria-label={`查看 ${project.name} 的详细 README`}
-    >
-      <Card className="h-full transition-all hover:border-primary/60 hover:shadow-lg hover:shadow-primary/5 overflow-hidden">
-        <div className={`h-1 bg-gradient-to-r ${stripFrom}`} aria-hidden="true" />
-        <CardHeader className="pb-3">
-          <div className="flex items-start justify-between gap-2">
-            <div className="flex items-start gap-3">
-              <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-secondary/50 text-sm font-mono text-muted-foreground shrink-0">
-                {String(index + 1).padStart(2, "0")}
-              </div>
-              <div>
-                <CardTitle className="text-base leading-snug group-hover:text-primary transition-colors">
-                  {project.name}
-                </CardTitle>
-                <p className="text-xs text-muted-foreground line-clamp-2 mt-1">
-                  {project.description}
-                </p>
-              </div>
-            </div>
-            <span className="inline-flex items-center gap-1 rounded border border-yellow-500/30 bg-yellow-500/10 px-1.5 py-0.5 text-[10px] font-mono text-yellow-700 dark:text-yellow-300 shrink-0">
-              <Star className="h-3 w-3 fill-current" aria-hidden="true" /> {formatStars(project.stars)}
-            </span>
-          </div>
-        </CardHeader>
-
-        <div className="px-6 pb-4">
-          {/* Topics — tags like cheatsheet */}
-          {project.topics.length > 0 && (
-            <div className="flex flex-wrap gap-1 mb-3">
-              {project.topics.slice(0, 4).map((t) => (
-                <Badge key={t} className="text-[10px] py-0">#{t}</Badge>
-              ))}
-            </div>
-          )}
-
-          {/* Install snippet + copy */}
-          {project.installCommand && (
-            <div className="group/code mb-3 flex items-center gap-1 rounded-md border border-border/40 bg-secondary/30 px-2 py-1.5 transition-colors group-hover:border-border/70 group-hover:bg-secondary/50">
-              <code className="min-w-0 flex-1 truncate font-mono text-[11px] text-foreground/80">
-                {project.installCommand}
-              </code>
-              <CopyButton text={project.installCommand} label="复制安装命令" />
-            </div>
-          )}
-
-          <div className="flex items-center justify-between pt-3 border-t border-border/40">
-            <span className="inline-flex min-w-0 items-center gap-1.5 truncate font-mono text-xs text-muted-foreground">
-              <Github className="h-3 w-3 shrink-0" aria-hidden="true" />
-              <span className="truncate">{project.owner}/{project.repo}</span>
-            </span>
-            <span className="inline-flex items-center text-xs text-primary opacity-0 group-hover:opacity-100 transition-opacity">
-              查看详情
-              <ChevronRight className="h-4 w-4 ml-0.5" aria-hidden="true" />
-            </span>
-          </div>
-        </div>
-      </Card>
-    </Link>
   );
 }
