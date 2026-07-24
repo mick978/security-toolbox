@@ -8,6 +8,7 @@ import { Mermaid } from "@/components/mermaid";
 import { Topology } from "@/components/topology";
 import { FavoriteButton } from "@/components/favorites-provider";
 import { exploreBg } from "@/lib/explore-palette";
+import { canonical, ORG_ID } from "@/lib/site";
 import {
   ArrowLeft, AlertTriangle, ChevronRight, BookOpen, Zap, Wrench, Clock,
   Globe, Swords, MonitorSmartphone, Cloud, Boxes, Smartphone, Waypoints,
@@ -70,7 +71,11 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   const { slug } = await params;
   const c = cheatBySlug(slug);
   if (!c) return { title: "案例未找到" };
-  return { title: `${c.title} · SecToolbox`, description: c.summary };
+  return {
+    title: c.title,
+    description: c.summary,
+    alternates: { canonical: canonical(`/cheatsheet/${slug}`) },
+  };
 }
 
 export default async function CasePage({ params }: { params: Promise<{ slug: string }> }) {
@@ -206,6 +211,35 @@ export default async function CasePage({ params }: { params: Promise<{ slug: str
 
       {/* Steps */}
       <section className="container py-10 max-w-4xl">
+        {/* AEO / JSON-LD: HowTo schema. Each step's title + desc becomes
+            a HowToStep, with cmd as `text` so AI agents can quote the
+            command directly. Estimated total time (ISO 8601 duration)
+            helps engines surface "do this in ~10 min" hints. */}
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify({
+              "@context": "https://schema.org",
+              "@type": "HowTo",
+              "@id": `${canonical(`/cheatsheet/${c.slug}`)}#howto`,
+              name: c.title,
+              description: c.summary,
+              url: canonical(`/cheatsheet/${c.slug}`),
+              inLanguage: "zh-CN",
+              ...(c.durationMinutes != null
+                ? { totalTime: `PT${c.durationMinutes}M` }
+                : {}),
+              step: c.steps.map((s, i) => ({
+                "@type": "HowToStep",
+                position: i + 1,
+                name: s.title,
+                ...(s.desc ? { description: s.desc } : {}),
+                ...(s.cmd ? { text: s.cmd } : {}),
+              })),
+              publisher: { "@id": ORG_ID },
+            }),
+          }}
+        />
         <div className="mb-8">
           <h2 className="text-xl font-semibold flex items-center gap-2">
             <BookOpen className="h-5 w-5 text-primary" aria-hidden="true" />

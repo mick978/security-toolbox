@@ -5,6 +5,7 @@ import { categories, tools } from "@/lib/tools";
 import { EXECUTOR_SLUGS } from "@/lib/executors";
 import { securityAgents } from "@/lib/agents";
 import { cheatsheets } from "@/lib/cheatsheets";
+import { latestNews } from "@/lib/news";
 import { categoryColor } from "@/lib/category-colors";
 import { iconByName } from "@/lib/icon-map";
 import { Card, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -12,8 +13,15 @@ import { Badge } from "@/components/ui/badge";
 import {
   ArrowRight, Zap, Shield, ShieldAlert, Swords, BookOpen, Bot, Network, AlertTriangle,
   Sparkles, Wrench, Search, Compass, GitBranch, BookOpenText, ChevronRight, Clock, ListChecks,
+  Newspaper,
 } from "lucide-react";
 import { ExploreHero, ExploreHeroBadge } from "@/components/explore-hero";
+import { itemListJsonLd } from "@/lib/aeo";
+import { canonical } from "@/lib/site";
+
+export const metadata = {
+  alternates: { canonical: "/" },
+};
 
 export default function HomePage() {
   const stats = [
@@ -90,8 +98,36 @@ export default function HomePage() {
    * The data file already sorts cases by category priority. */
   const latestCases = cheatsheets.slice(0, 3);
 
+  /* Three freshest news articles - same idea as latestCases: the home
+   * page should signal that the news feed is alive, not just point at it. */
+  const latestNewsItems = latestNews(3);
+
   return (
     <div className="min-h-screen">
+      {/* Homepage ItemList — a curated mix of 6 high-signal entries
+          (3 freshest news + 3 most useful cheatsheets) so AI agents
+          that crawl the home get an immediate "what's new + what to
+          read" snapshot without parsing the rest of the page. */}
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify(
+            itemListJsonLd(
+              "SecToolbox 首页精选",
+              [
+                ...latestNews(3).map((n) => ({
+                  url: canonical(`/news/${n.slug}`),
+                  name: n.title,
+                })),
+                ...cheatsheets.slice(0, 3).map((c) => ({
+                  url: canonical(`/cheatsheet/${c.slug}`),
+                  name: c.title,
+                })),
+              ],
+            ),
+          ),
+        }}
+      />
       <ExploreHero
         badge={<ExploreHeroBadge icon={Sparkles}>v0.1 · 开源 · 网络安全排查工具集</ExploreHeroBadge>}
         titleLine1="网络安全排查工具"
@@ -263,6 +299,67 @@ export default function HomePage() {
                 </div>
                 <span className="inline-flex items-center text-xs text-primary opacity-0 translate-x-1 transition-all group-hover:opacity-100 group-hover:translate-x-0">
                   打开
+                  <ChevronRight className="h-3.5 w-3.5 ml-0.5" aria-hidden="true" />
+                </span>
+              </div>
+            </Link>
+          ))}
+        </div>
+      </section>
+
+      {/* Latest news - mirrors the latest-cases block so the homepage
+          signals that the news feed is alive. Three freshest articles,
+          served straight from the data file (already sorted newest-first). */}
+      <section className="container pb-section">
+        <div className="flex items-end justify-between mb-block">
+          <div>
+            <h2 className="text-2xl font-bold flex items-center gap-2">
+              <Newspaper className="h-6 w-6 text-primary" aria-hidden="true" />
+              <span>最新资讯</span>
+            </h2>
+            <p className="text-sm text-muted-foreground mt-1">
+              AI / 攻击 / 排查 三大方向精选复盘 -
+            </p>
+          </div>
+          <Link href="/news" className="text-sm text-primary hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60 rounded whitespace-nowrap">
+            全部资讯 →
+          </Link>
+        </div>
+
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 stagger-list">
+          {latestNewsItems.map((n) => (
+            <Link
+              key={n.slug}
+              href={`/news/${n.slug}`}
+              className="group block h-full rounded-xl border border-border/60 bg-card p-5 transition-all duration-300 hover:border-primary/60 hover:shadow-xl hover:shadow-primary/15 hover:-translate-y-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60 focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+              aria-label={`阅读 ${n.title}`}
+            >
+              <div className="flex items-center gap-2 text-xs text-muted-foreground font-mono">
+                <span className="inline-flex items-center gap-1 text-[11px]">
+                  <Clock className="h-3 w-3" aria-hidden="true" />
+                  {n.readMinutes ?? 5} 分
+                </span>
+                <span className="opacity-40">·</span>
+                <span className="inline-flex items-center gap-1 text-[11px]">
+                  {n.date.replace(/-/g, ".")}
+                </span>
+              </div>
+              <h3 className="text-base font-semibold mt-2 group-hover:text-primary transition-colors line-clamp-2">
+                {n.title}
+              </h3>
+              <p className="text-xs text-muted-foreground mt-2 line-clamp-2 leading-relaxed">
+                {n.summary}
+              </p>
+              <div className="mt-3 flex items-center justify-between">
+                <div className="flex flex-wrap gap-1">
+                  {n.tags.slice(0, 2).map((t) => (
+                    <span key={t} className="inline-flex rounded-full border border-border/60 bg-secondary/40 px-1.5 py-0.5 text-[10px]">
+                      #{t}
+                    </span>
+                  ))}
+                </div>
+                <span className="inline-flex items-center text-xs text-primary opacity-0 translate-x-1 transition-all group-hover:opacity-100 group-hover:translate-x-0">
+                  阅读
                   <ChevronRight className="h-3.5 w-3.5 ml-0.5" aria-hidden="true" />
                 </span>
               </div>

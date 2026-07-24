@@ -2,9 +2,10 @@
 
 import { useEffect, useState, useRef } from "react";
 import { useRouter } from "next/navigation";
-import { Search, Terminal, BookOpenText, X, ArrowUp, ArrowDown, CornerDownLeft } from "lucide-react";
+import { Search, Terminal, BookOpenText, X, ArrowUp, ArrowDown, CornerDownLeft, Newspaper } from "lucide-react";
 import { tools } from "@/lib/tools";
 import { cheatsheets } from "@/lib/cheatsheets";
+import { news } from "@/lib/news";
 import { cn } from "@/lib/utils";
 
 export interface CommandMenuHandle {
@@ -14,7 +15,7 @@ export interface CommandMenuHandle {
 type Item = {
   slug: string;
   label: string;
-  type: "tool" | "cheat";
+  type: "tool" | "cheat" | "news";
   desc?: string;
   haystack: string; // precomputed lowercase + pinyin initials
 };
@@ -35,7 +36,14 @@ function getItems(): Item[] {
     desc: c.summary,
     haystack: tokensFor(c.title, c.summary, c.tags),
   }));
-  return [...toolItems, ...cheatItems];
+  const newsItems: Item[] = news.map((n) => ({
+    slug: n.slug,
+    label: n.title,
+    type: "news" as const,
+    desc: n.summary,
+    haystack: tokensFor(n.title, n.summary, n.tags),
+  }));
+  return [...toolItems, ...cheatItems, ...newsItems];
 }
 
 export function CommandMenu({ open, onOpenChange }: { open: boolean; onOpenChange: (v: boolean) => void }) {
@@ -51,7 +59,7 @@ export function CommandMenu({ open, onOpenChange }: { open: boolean; onOpenChang
     : items;
 
   const grouped = filtered.reduce<Record<string, Item[]>>((acc, item) => {
-    const key = item.type === "tool" ? "工具" : "案例";
+    const key = item.type === "tool" ? "工具" : item.type === "cheat" ? "案例" : "资讯";
     if (!acc[key]) acc[key] = [];
     acc[key].push(item);
     return acc;
@@ -96,7 +104,10 @@ export function CommandMenu({ open, onOpenChange }: { open: boolean; onOpenChang
   };
 
   const goto = (item: Item) => {
-    const url = item.type === "tool" ? `/tools/${item.slug}` : `/cheatsheet/${item.slug}`;
+    const url =
+      item.type === "tool" ? `/tools/${item.slug}`
+      : item.type === "cheat" ? `/cheatsheet/${item.slug}`
+      : `/news/${item.slug}`;
     onOpenChange(false);
     router.push(url);
   };
@@ -121,7 +132,7 @@ export function CommandMenu({ open, onOpenChange }: { open: boolean; onOpenChang
             value={query}
             onChange={(e) => { setQuery(e.target.value); setSelected(0); }}
             onKeyDown={handleKey}
-            placeholder="搜索工具或案例..."
+            placeholder="搜索工具 / 案例 / 资讯..."
             className="flex-1 h-11 bg-transparent px-2 text-sm outline-none placeholder:text-muted-foreground"
           />
           <button onClick={() => onOpenChange(false)} className="p-1 hover:bg-secondary rounded">
@@ -148,8 +159,10 @@ export function CommandMenu({ open, onOpenChange }: { open: boolean; onOpenChang
                   >
                     {item.type === "tool" ? (
                       <Terminal className="h-3.5 w-3.5 shrink-0" />
-                    ) : (
+                    ) : item.type === "cheat" ? (
                       <BookOpenText className="h-3.5 w-3.5 shrink-0" />
+                    ) : (
+                      <Newspaper className="h-3.5 w-3.5 shrink-0" />
                     )}
                     <div className="flex-1 min-w-0">
                       <div className="truncate font-medium">{item.label}</div>

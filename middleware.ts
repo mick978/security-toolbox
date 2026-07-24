@@ -13,6 +13,7 @@ const PUBLIC_PATHS = [
   "/mcp",
   "/agents",
   "/network",
+  "/news",
   "/sitemap.xml",
   "/robots.txt",
   "/case-images",
@@ -23,6 +24,8 @@ const PUBLIC_PREFIXES = [
   // Skill catalog lives under /mcp?tab=skills and detail at /mcp/[slug]
   "/mcp/",
   "/agents/",
+  // News article detail pages
+  "/news/",
 ];
 
 export async function middleware(req: NextRequest) {

@@ -1,0 +1,32 @@
+# SecToolbox
+#
+# Public, discoverable surface. We intentionally allow the major AI
+# crawlers (GPTBot / ClaudeBot / PerplexityBot / Google-Extended) so
+# AI search and answer engines can cite our content. If you want to
+# block a specific bot, add a more-specific User-agent block above
+# the wildcard one — the more specific rule wins.
+
+User-agent: *
+Allow: /
+
+# AI search / answer engines — explicitly allowed.
+User-agent: GPTBot
+Allow: /
+
+User-agent: ClaudeBot
+Allow: /
+
+User-agent: Claude-Web
+Allow: /
+
+User-agent: PerplexityBot
+Allow: /
+
+User-agent: Google-Extended
+Allow: /
+
+# Disallow internal / auth-gated endpoints if any leak into the index.
+User-agent: *
+Disallow: /api/
+
+Sitemap: https://sectoolbox.dev/sitemap.xml

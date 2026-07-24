@@ -12,10 +12,12 @@ import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { ExploreHero, ExploreHeroBadge } from "@/components/explore-hero";
 import { ExploreSection } from "@/components/explore-section";
+import { itemListFromSlugs } from "@/lib/aeo";
 
 export const metadata = {
   title: "场景速查 · SecToolbox",
   description: "按典型排查场景组织的实战 SOP · 网络 / 攻击 / 系统 / 云安全 / K8s / 移动抓包 / 内网横向",
+  alternates: { canonical: "/cheatsheet" },
 };
 
 /* Severity chip — `Icon` (Lucide component) replaces the previous emoji
@@ -46,6 +48,20 @@ const categoryIcons: Record<string, { icon: typeof Globe; gradient: string; icon
 export default function CheatsheetPage() {
   return (
     <div className="min-h-screen">
+      {/* Top-10 ItemList — gives AI agents a fast answer to
+          "what cheatsheets does SecToolbox have" without parsing. */}
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify(
+            itemListFromSlugs(
+              "SecToolbox 排查案例",
+              "/cheatsheet",
+              cheatsheets.map((c) => ({ slug: c.slug, name: c.title })),
+            ),
+          ),
+        }}
+      />
       <ExploreHero
         badge={<ExploreHeroBadge icon={BookOpen}>实战 SOP · 场景速查</ExploreHeroBadge>}
         titleLine1="经典排查"

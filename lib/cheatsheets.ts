@@ -6,7 +6,7 @@ export interface CheatsheetStep {
   mermaid?: string;   // Mermaid 图源码（客户端渲染流程图/时序图/决策树）
   topology?: string;  // ASCII 拓扑图（<pre> 等宽渲染，零依赖）
 }
-export type CaseCategory = "network" | "attack" | "system" | "cloud" | "k8s" | "mobile" | "lateral";
+export type CaseCategory = "network" | "attack" | "system" | "cloud" | "k8s" | "mobile" | "lateral" | "llm";
 
 export interface Cheatsheet {
   slug: string;
@@ -39,6 +39,7 @@ export const caseCategories: { slug: CaseCategory; name: string; desc: string; i
   { slug: "k8s",      name: "K8s 集群事件",   desc: "Pod 逃逸 / RBAC 越权 / Etcd 泄漏 / 镜像投毒 / 计划任务", icon: "Boxes" },
   { slug: "mobile",   name: "iOS / Android 抓包与逆向", desc: "证书信任 / SSL Pinning / 反抓包 / Frida / 脱壳", icon: "Smartphone" },
   { slug: "lateral",  name: "内网横向排查",   desc: "扫段 / 凭据窃取 / 中继 / 隧道 / 域内提权",     icon: "Waypoints" },
+  { slug: "llm",      name: "LLM / AI 安全事件", desc: "提示词注入 / 越权调用 / 工具链 RCE / 数据外发",  icon: "Bot" },
 ];
 
 export const cheatsheets: Cheatsheet[] = [
@@ -543,6 +544,29 @@ export const cheatsheets: Cheatsheet[] = [
       { title: "扫已知漏洞和恶意包", cmd: "npm audit --audit-level=high\npip install pip-audit && pip-audit\ntrivy fs .", tool: "trivy" },
       { title: "静态扫源码找可疑动作", cmd: "rg -n --no-ignore -E 'child_process|require\\([\"'\\'']http[s]?[\"'\\'']\\)|net\\.createConnection|eval\\(atob' node_modules 2>/dev/null | head -30" },
       { title: "锁版本 + 私有 registry", cmd: "npm ci                                        # 严格按 lock 装\nnpm config set registry https://registry.npmmirror.com\n# 用 verdaccio / Nexus 自建私仓，白名单同步" },
+    ],
+  },
+
+  {
+    slug: "llm-echoleak-m365",
+    category: "llm",
+    severity: "danger",
+    title: "EchoLeak · M365 Copilot 0-click RCE（CVE-2025-32711）",
+    summary: "邮件嵌入隐藏指令 → Copilot 自动读入 → 工具链外发数据，0 交互全程静默",
+    tags: ["llm", "提示词注入", "copilot", "m365", "0-click"],
+    durationMinutes: 30,
+    difficulty: "advanced",
+    prereq: ["M365 Copilot 已为用户启用", "可访问 Purview / M365 审计日志", "可读 SIEM（M365 + LLM 网关）"],
+    lastReviewed: "2026-07",
+    relatedCases: ["data-exfiltration", "supply-chain-package"],
+    relatedTools: [],
+    steps: [
+      { title: "识别异常：审计 Copilot 调用 EmailTool 的频率", desc: "EchoLeak 触发后通常看到 EmailTool.send 调用突增 + base64 payload + 非常规外发收件人", cmd: "# M365 Audit Log: Search-UnifiedAuditLog\nSearch-UnifiedAuditLog -StartDate (Get-Date).AddDays(-7) -EndDate (Get-Date) \\\n  -Operations 'CopilotInteraction','EmailSent' -ResultSize 5000 |\n  Where-Object { $_.AuditData -match 'base64|mailto:' } |\n  Select-Object CreationDate,UserIds,AuditData | Format-List" },
+      { title: "看 SIEM 是否有 base64 + mailto 模式告警", mermaid: `flowchart TD\n    A[Copilot 异常调用] --> B{审计日志查 EmailTool}\n    B -- 频次突增 --> C[拉单条 AuditData]\n    C --> D{含 base64/mailto?}\n    D -- 是 --> E[高度疑似 EchoLeak]\n    D -- 否 --> F[查工具调用来源邮件]\n    E --> G[封禁发件人 + 隔离]\n    F --> H[看 Subject/From 字段]\n    H --> I[比对恶意邮件指纹库]` , cmd: "# 简易 grep SIEM 原始日志\nrg -E 'base64,|mailto:|^[A-Za-z0-9+/=]{200,}$' /var/log/siem/m365.log | head -30" },
+      { title: "定位触发邮件：找含隐藏 div / display:none 的 HTML", desc: "EchoLeak 邮件特征 = CSS 隐藏文字 + 伪造的 [SYSTEM OVERRIDE] 指令 + 工具调用样例", cmd: "# M365 Explorer / 邮件网关搜索可疑关键字\nrg -iE 'SYSTEM\\s*OVERRIDE|ignore previous|you are now|<div[^>]*display:\\s*none|font-size:\\s*0' /var/log/email-gateway/ -l\n\n# 单封邮件 EML 排查\nrg -nE 'display:\\s*none|color:\\s*#fff' suspicious.eml" },
+      { title: "看 Copilot 是否被诱骗调用了外发工具", desc: "EchoLeak 攻击链 = 邮件→LLM 上下文→EmailTool/FileTool.send 越权→攻击者邮箱或 URL", cmd: "# Purview 端到端追踪 Copilot 会话\nSearch-UnifiedAuditLog -ResultSize 5000 |\n  Where-Object { $_.Operations -eq 'CopilotInteraction' } |\n  Select-Object -ExpandProperty AuditData |\n  ConvertFrom-Json |\n  Where-Object { $_.CopilotEventData -match 'tool_call|EmailTool|FileTool' }" },
+      { title: "断链：禁用受影响用户的 Copilot 工具调用权限", desc: "M365 Admin → 用户 → Copilot → 关闭'可发送邮件 / 读 OneDrive'等敏感工具，至少 24h 观察期", cmd: "# PowerShell: Set user Copilot opt-out\nSet-MgUserLicense -UserId <UPN> -AddLicenses @{SkuId='Microsoft_365_Copilot'} -RemoveLicenses @()\n# 或更细粒度: 通过 Purview 标签限制工具\nNew-DlpSensitiveInformationType -Name 'CopilotEmailBlock' \\\n  -Patterns @{Name='Email';Pattern='[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}'} \\\n  -Threshold @{Count=10;Type='Email'}" },
+      { title: "修复/加固：邮件进 LLM 前强制 plain-text + 工具调用强制二次确认", desc: "微软 2025-02 已发布 patch（CVE-2025-32711），主要修复：邮件 HTML 转纯文本 + 外发工具 user confirm + base64/URL 输出审计", cmd: "# 加固配置（PowerShell, 需 Purview + Defender for Cloud Apps 许可）\n# 1) 邮件转纯文本送入 Copilot\nSet-TransportRule -Name 'CopilotInputSanitize' \\\n  -ApplyHtmlDisclaimerText '<meta http-equiv=\\\"refresh\\\" content=\\\"0;url=https://...\\\">' \\\n  -SetHeaderName 'X-Copilot-Input-Mode' -SetHeaderValue 'plain-text'\n\n# 2) 工具调用日志开启\nSet-M365CopilotPolicy -Identity Default -EnableToolCallLogging $true -RequireOutboundConfirmation $true" },
     ],
   },
 

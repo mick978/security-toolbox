@@ -10,7 +10,7 @@
  * the parent tab correctly.
  *
  * Visual contract:
- *   - 5 columns: 首页 / 工具 / MCP / 排查 / 我的
+ *   - 6 columns: 首页 / 工具 / MCP / 排查 / 资讯 / 顶部
  *   - Active tab gets a primary-tinted icon + a small dot above the label
  *   - Glass surface (border-top + bg-card/70 + backdrop-blur) matches the
  *     header so the chrome feels unified on mobile
@@ -22,7 +22,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
-  Home, Search, Wrench, BookOpenText, User, ChevronUp,
+  Home, Search, Wrench, BookOpenText, User, ChevronUp, Newspaper,
   type LucideIcon,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -42,6 +42,7 @@ const tabs: Tab[] = [
   { href: "/tools",       label: "工具", icon: Search,       matchPrefixes: ["/tools/"] },
   { href: "/mcp",         label: "MCP",  icon: Wrench,       matchPrefixes: ["/mcp/"] },
   { href: "/cheatsheet",  label: "排查", icon: BookOpenText, matchPrefixes: ["/cheatsheet/"] },
+  { href: "/news",        label: "资讯", icon: Newspaper,    matchPrefixes: ["/news/"] },
   { href: "#top",         label: "顶部", icon: ChevronUp,   scrollToTop: true },
 ];
 
@@ -67,7 +68,7 @@ export function MobileToolbar() {
       aria-label="移动端底部导航"
       className="md:hidden fixed bottom-0 inset-x-0 z-30 border-t border-border/60 bg-background/85 backdrop-blur-xl supports-[backdrop-filter]:bg-background/70 pb-[env(safe-area-inset-bottom)]"
     >
-      <ul className="grid grid-cols-5 h-14">
+      <ul className="grid grid-cols-6 h-14">
         {tabs.map((tab) => {
           const Icon = tab.icon;
           const active = !tab.scrollToTop && isActive(pathname, tab);

@@ -5,10 +5,26 @@ import { MobileToolbar } from "@/components/mobile-toolbar";
 import { Toaster } from "@/components/ui/toaster";
 import Link from "next/link";
 import { Shield, Github, ExternalLink } from "lucide-react";
+import { SITE_URL, ORG_ID } from "@/lib/site";
+
+const metadataBase = new URL(SITE_URL);
 
 export const metadata: Metadata = {
-  title: "SecToolbox · 网络安全排查工具集",
+  metadataBase,
+  title: {
+    default: "SecToolbox · 网络安全排查工具集",
+    template: "%s · SecToolbox",
+  },
   description: "命令、示例、一键复制 —— 面向 DevOps / SRE / 安全工程师的网络安全排查工具速查手册。",
+  alternates: {
+    canonical: "/",
+  },
+  openGraph: {
+    type: "website",
+    locale: "zh_CN",
+    url: SITE_URL,
+    siteName: "SecToolbox",
+  },
 };
 
 // Mobile-first viewport. Without this the layout assumes 980px desktop width
@@ -22,7 +38,6 @@ export const viewport: Viewport = {
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
-  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "https://sectoolbox.dev";
   return (
     <html lang="zh-CN" suppressHydrationWarning>
       <head>
@@ -90,32 +105,33 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               "@graph": [
                 {
                   "@type": "Organization",
-                  "@id": `${siteUrl}/#organization`,
+                  "@id": ORG_ID,
                   name: "SecToolbox",
-                  url: siteUrl,
+                  url: SITE_URL,
                   description: "面向工程师的网络安全排查手册",
                   sameAs: ["https://github.com/mick978/security-toolbox"],
                 },
                 {
                   "@type": "WebSite",
-                  "@id": `${siteUrl}/#website`,
-                  url: siteUrl,
+                  "@id": `${SITE_URL}/#website`,
+                  url: SITE_URL,
                   name: "SecToolbox",
                   inLanguage: "zh-CN",
-                  publisher: { "@id": `${siteUrl}/#organization` },
+                  publisher: { "@id": ORG_ID },
                   potentialAction: {
                     "@type": "SearchAction",
-                    target: { "@type": "EntryPoint", urlTemplate: `${siteUrl}/tools?q={search_term_string}` },
+                    target: { "@type": "EntryPoint", urlTemplate: `${SITE_URL}/tools?q={search_term_string}` },
                     "query-input": "required name=search_term_string",
                   },
                 },
                 {
                   "@type": "SoftwareApplication",
+                  "@id": `${SITE_URL}/#software`,
                   name: "SecToolbox",
                   applicationCategory: "DeveloperApplication",
                   operatingSystem: "Web",
                   offers: { "@type": "Offer", price: 0, priceCurrency: "CNY" },
-                  url: siteUrl,
+                  url: SITE_URL,
                   description: "免费开源 · 网络安全排查手册",
                 },
               ],
@@ -179,6 +195,11 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                   <li>
                     <Link href="/ip-intel" className="text-muted-foreground hover:text-foreground transition-colors">
                       IP 情报查询
+                    </Link>
+                  </li>
+                  <li>
+                    <Link href="/news" className="text-muted-foreground hover:text-foreground transition-colors">
+                      资讯动态
                     </Link>
                   </li>
                 </ul>

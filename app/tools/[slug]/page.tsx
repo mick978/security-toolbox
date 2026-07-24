@@ -14,6 +14,7 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from "@/components/ui/card";
 import { CodeBlock } from "@/components/code-block";
 import { ArrowLeft, ExternalLink, Terminal, AlertTriangle, Package, BookOpen } from "lucide-react";
+import { canonical, ORG_ID } from "@/lib/site";
 
 // SSG only top-12 most-visited tools by difficulty order (priority 1 first,
 // ties broken by slug). The full list used to be 88+ pages which on Next 16
@@ -32,7 +33,11 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   const { slug } = await params;
   const t = toolBySlug(slug);
   if (!t) return { title: "工具未找到" };
-  return { title: `${t.name} · ${t.tagline} · SecToolbox`, description: t.description };
+  return {
+    title: `${t.name} · ${t.tagline}`,
+    description: t.description,
+    alternates: { canonical: canonical(`/tools/${slug}`) },
+  };
 }
 
 export default async function ToolDetail({ params }: { params: Promise<{ slug: string }> }) {
@@ -64,19 +69,26 @@ export default async function ToolDetail({ params }: { params: Promise<{ slug: s
         <article className="max-w-4xl min-w-0">
           {/* Tool-level JSON-LD — SoftwareSourceCode schema helps
               Google surface install command + platforms as rich
-              results when the page is shared. */}
+              results when the page is shared. `codeRepository` and
+              `url` are conditionally included so missing fields
+              don't render as empty strings (which is a schema
+              validation error). */}
           <script
             type="application/ld+json"
             dangerouslySetInnerHTML={{
               __html: JSON.stringify({
                 "@context": "https://schema.org",
                 "@type": "SoftwareSourceCode",
+                "@id": `${canonical(`/tools/${tool.slug}`)}#software`,
                 name: tool.name,
                 description: tool.description,
+                url: canonical(`/tools/${tool.slug}`),
+                applicationCategory: tool.category,
                 keywords: tool.tags.join(","),
-                codeRepository: tool.homepage,
+                ...(tool.homepage ? { codeRepository: tool.homepage } : {}),
                 programmingLanguage: "Shell",
                 operatingSystem: tool.platforms.join(","),
+                publisher: { "@id": ORG_ID },
               }),
             }}
           />

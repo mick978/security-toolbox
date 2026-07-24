@@ -5,7 +5,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
   Shield, Search, BookOpenText, Home, Globe, Github, Bot, Wrench, Menu, X,
-  Sun, Moon, Sparkles, Settings as SettingsIcon,
+  Sun, Moon, Sparkles, Settings as SettingsIcon, Newspaper,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useThemeStore } from "@/lib/theme";
@@ -18,6 +18,7 @@ const nav = [
   { href: "/agents", label: "AI Agent", icon: Bot },
   { href: "/mcp", label: "MCP/Skills", icon: Wrench },
   { href: "/cheatsheet", label: "排查案例", icon: BookOpenText },
+  { href: "/news", label: "资讯", icon: Newspaper },
   { href: "/ip-intel", label: "IP 情报", icon: Globe },
 ];
 
