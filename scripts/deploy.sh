@@ -21,6 +21,9 @@ NODE_BIN="${NODE_BIN:-/usr/bin/node}"   # remote node path
 : "${AUTH_USERS:?AUTH_USERS must be set, e.g. admin:pw1,guest:pw2}"
 : "${AUTH_SECRET:?AUTH_SECRET must be set (64 hex chars)}"
 AUTH_TTL_HOURS="${AUTH_TTL_HOURS:-168}"
+# AEO canonical host — required in production so JSON-LD doesn't
+# emit a placeholder. Without it lib/site.ts throws at module load.
+: "${NEXT_PUBLIC_SITE_URL:?NEXT_PUBLIC_SITE_URL must be set, e.g. http://47.109.63.111:9119}"
 
 HERE="$(cd "$(dirname "$0")/.." && pwd)"
 STAMP="$(date +%Y%m%d-%H%M%S)"
@@ -92,6 +95,7 @@ Environment="AUTH_USERS=${AUTH_USERS}"
 Environment="AUTH_SECRET=${AUTH_SECRET}"
 Environment=AUTH_TTL_HOURS=${AUTH_TTL_HOURS}
 Environment=AUTH_COOKIE_INSECURE=1
+Environment="NEXT_PUBLIC_SITE_URL=${NEXT_PUBLIC_SITE_URL}"
 ExecStart=${NODE_BIN} server.js
 Restart=always
 RestartSec=3
@@ -123,7 +127,13 @@ nginx -t
 systemctl daemon-reload
 systemctl enable --now "$SERVICE_NAME"
 systemctl restart "$SERVICE_NAME"
-systemctl reload nginx || systemctl restart nginx
+# `reload` is preferred but some hosts run nginx in a state where
+# the systemd unit is "inactive" (e.g. installed but not started
+# after a reboot). Fall back to start so we don't silently leave
+# the proxy in a stale state.
+if ! systemctl reload nginx 2>/dev/null; then
+  systemctl restart nginx || true
+fi
 
 # health probe (B1: unauth "/" now 307→/login; that's healthy)
 sleep 1
