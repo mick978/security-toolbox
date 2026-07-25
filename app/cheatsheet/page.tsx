@@ -3,7 +3,7 @@ export const dynamic = "force-dynamic";
 import Link from "next/link";
 import {
   ChevronRight, AlertTriangle, Zap, Cloud, Boxes, Smartphone, Waypoints,
-  Clock, Shield, BookOpen,
+  Clock, Shield, BookOpen, Bot,
   Info, Siren,
   Globe, Swords, MonitorSmartphone,
 } from "lucide-react";
@@ -43,6 +43,7 @@ const categoryIcons: Record<string, { icon: typeof Globe; gradient: string; icon
   k8s:      { icon: Boxes,              gradient: "from-indigo-500/20 to-violet-500/20", iconBg: "bg-indigo-500/10" },
   mobile:   { icon: Smartphone,         gradient: "from-emerald-500/20 to-teal-500/20",  iconBg: "bg-emerald-500/10" },
   lateral:  { icon: Waypoints,          gradient: "from-orange-500/20 to-amber-500/20",  iconBg: "bg-orange-500/10" },
+  llm:      { icon: Bot,                gradient: "from-fuchsia-500/20 to-pink-500/20",  iconBg: "bg-fuchsia-500/10" },
 };
 
 export default function CheatsheetPage() {
@@ -78,12 +79,12 @@ export default function CheatsheetPage() {
         stats={[
           { value: cheatsheets.length.toString(),  label: "排查案例", icon: BookOpen },
           { value: caseCategories.length.toString(), label: "场景分类", icon: Shield },
-          { value: "7",                              label: "覆盖领域", icon: Zap },
+          { value: caseCategories.length.toString(), label: "覆盖领域", icon: Zap },
           { value: "100+",                           label: "排查命令", icon: Clock },
         ]}
         quickNav={caseCategories.map((cc) => {
-          const visual = categoryIcons[cc.slug];
-          const Icon = visual?.icon;
+          const visual = categoryIcons[cc.slug] ?? categoryIcons.lateral;
+          const Icon = visual.icon;
           return {
             label: cc.name,
             href: `#${cc.slug}`,
@@ -97,7 +98,7 @@ export default function CheatsheetPage() {
         <div className="space-y-16">
           {caseCategories.map((cc) => {
             const list = casesByCategory(cc.slug);
-            const visual = categoryIcons[cc.slug];
+            const visual = categoryIcons[cc.slug] ?? categoryIcons.lateral;
             const Icon = visual.icon;
 
             return (
