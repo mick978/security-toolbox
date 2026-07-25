@@ -4,7 +4,7 @@
 
 **A one-stop network-security triage handbook for red teams, blue teams, DFIR, and security engineers**
 
-96 tools · 13 categories · 60 real-world playbooks · 44 curated AI-security ecosystem projects
+111 tools · 13 categories · 55 real-world playbooks · 49 curated AI-security ecosystem projects
 
 [![Next.js](https://img.shields.io/badge/Next.js-16-black?style=flat-square&logo=next.js)](https://nextjs.org)
 [![TypeScript](https://img.shields.io/badge/TypeScript-strict-3178c6?style=flat-square&logo=typescript)](https://www.typescriptlang.org)
@@ -40,7 +40,7 @@ Beyond reading, the site lets you **do** the work: a built-in ⌘K palette searc
 
 ## 🧰 What's Inside
 
-### Tool categories (13 categories / 96 tools)
+### Tool categories (13 categories / 111 tools)
 
 | Category | Scope |
 |---|---|
@@ -58,7 +58,7 @@ Beyond reading, the site lets you **do** the work: a built-in ⌘K palette searc
 | Pentest post-exploitation | hydra / hashcat / crackmapexec / impacket |
 | Online execution | Tools that can run inside the browser via `/api/exec` |
 
-### Real-world playbooks (60 scenarios)
+### Real-world playbooks (55 scenarios)
 
 - **Network triage** — DNS resolution failures / HTTPS certificate errors / high latency / port exposure / site security checkups / log forensics
 - **Cloud security** — AWS IMDS · GCP metadata · Azure IMDS · cloud credential lateral movement
@@ -70,11 +70,11 @@ Beyond reading, the site lets you **do** the work: a built-in ⌘K palette searc
 
 ## 🤖 The Three AI-Security Ecosystems
 
-The project curates **44 GitHub-API-validated** open-source projects (data source: [`lib/github-projects.ts`](lib/github-projects.ts)).
+The project curates **49 GitHub-API-validated** open-source projects (data source: [`lib/github-projects.ts`](lib/github-projects.ts)).
 
 | Section | Count | Path | Purpose |
 |---|---|---|---|
-| MCP servers | **19** | `/mcp` (MCP tab) | Wrap local CLIs / online services into "tools" an AI can call |
+| MCP servers | **24** | `/mcp` (MCP tab) | Wrap local CLIs / online services into "tools" an AI can call |
 | Agent Skills | **12** | `/mcp` (Skills tab) | Give an AI an operating manual via `SKILL.md` — how to reason and execute step by step |
 | Security AI agents | **13** | `/agents` | End-to-end autonomous agents that run pentests / vuln scans / threat intel by themselves |
 
@@ -82,7 +82,7 @@ The project curates **44 GitHub-API-validated** open-source projects (data sourc
 
 MCP ([modelcontextprotocol.io](https://modelcontextprotocol.io)) is Anthropic's open standard for AI tool invocation. In one sentence: **wrap any tool — nmap, sqlmap, Shodan — into an endpoint an AI can call on demand.** Given a tool description plus an input schema, the LLM decides when to call which tool and with what arguments.
 
-The 19 real security MCP servers are listed under `/mcp`; highlights include HexStrike AI (150+ tools), Prowler (cloud CIS), Ghidra (RE), Burp Suite, Shodan, VirusTotal, SonarQube, REMnux, Cisco AI Defense MCP Scanner, Snyk Agent Scan, and CVE intelligence.
+The 24 real security MCP servers are listed under `/mcp`; highlights include HexStrike AI (150+ tools), Prowler (cloud CIS), Ghidra (RE), Burp Suite, Shodan, VirusTotal, SonarQube, REMnux, Cisco AI Defense MCP Scanner, Snyk Agent Scan, and CVE intelligence.
 
 ### Agent Skills · the `SKILL.md` operating manual
 
@@ -229,10 +229,10 @@ components/                  Header / MobileToolbar / CommandMenu /
                             FavoritesDrawer / ExploreHero / ExploreCard /
                             project-detail / markdown / mermaid / ui
 lib/
-├── tools.ts                96 tool entries (single source of truth)
-├── cheatsheets.ts          60 playbook SOPs
+├── tools.ts                111 tool entries (single source of truth)
+├── cheatsheets.ts          55 playbook SOPs
 ├── executors.ts            whitelisted debug tools + arg validation
-├── github-projects.ts      44 AI ecosystem projects (GitHub-API validated)
+├── github-projects.ts      49 AI ecosystem projects (GitHub-API validated)
 ├── agents.ts               13 security AI agents + categories
 ├── theme.ts                light / dark / system + 6 accent presets
 ├── favorites.ts            localStorage-backed favorites store

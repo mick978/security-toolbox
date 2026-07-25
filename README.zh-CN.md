@@ -4,7 +4,7 @@
 
 **面向红队 / 蓝队 / DFIR / 安全工程师的一站式网络安全排查手册**
 
-96 个工具 · 13 大分类 · 60 个实战场景 · 44 个精选 AI 安全生态项目
+111 个工具 · 13 大分类 · 55 个实战场景 · 49 个精选 AI 安全生态项目
 
 [![Next.js](https://img.shields.io/badge/Next.js-16-black?style=flat-square&logo=next.js)](https://nextjs.org)
 [![TypeScript](https://img.shields.io/badge/TypeScript-strict-3178c6?style=flat-square&logo=typescript)](https://www.typescriptlang.org)
@@ -40,7 +40,7 @@
 
 ## 🧰 内容一览
 
-### 工具分类（13 大类 / 96 个）
+### 工具分类（13 大类 / 111 个）
 
 | 分类 | 覆盖范围 |
 |---|---|
@@ -58,7 +58,7 @@
 | 渗透后渗透 | hydra / hashcat / crackmapexec / impacket |
 | 在线执行 | 可在浏览器内直接跑（`/api/exec`） |
 
-### 实战场景速查（60 个）
+### 实战场景速查（55 个）
 
 - **网络排查** — 域名解析异常 / HTTPS 证书错误 / 高延迟 / 端口开放性 / 站点安全体检 / 日志取证
 - **云安全** — AWS IMDS · GCP metadata · Azure IMDS · 云凭据横移
@@ -70,11 +70,11 @@
 
 ## 🤖 三大 AI 安全生态
 
-本项目收录 **44 个经 GitHub API 校验** 的开源项目（数据源：[`lib/github-projects.ts`](lib/github-projects.ts)）。
+本项目收录 **49 个经 GitHub API 校验** 的开源项目（数据源：[`lib/github-projects.ts`](lib/github-projects.ts)）。
 
 | 板块 | 数量 | 路径 | 作用 |
 |---|---|---|---|
-| MCP 服务器 | **19** | `/mcp`（MCP 标签） | 把本地命令行 / 在线服务封装成 AI 可调用的「工具」 |
+| MCP 服务器 | **24** | `/mcp`（MCP 标签） | 把本地命令行 / 在线服务封装成 AI 可调用的「工具」 |
 | Agent Skills | **12** | `/mcp`（Skills 标签） | 用 `SKILL.md` 给 AI 写「操作手册」，规定它怎么思考、怎么分步执行 |
 | 安全 AI Agent | **13** | `/agents` | 端到端接管任务的自动代理，自主渗透 / 漏洞扫描 / 威胁情报 |
 
@@ -82,7 +82,7 @@
 
 MCP（[modelcontextprotocol.io](https://modelcontextprotocol.io)）是 Anthropic 提出的「AI 工具调用」标准协议。核心思想：**把 nmap、sqlmap、Shodan 等任意工具封装成一个 AI 可随时调用的 endpoint**。LLM 拿到「工具描述 + 输入 schema」后，自动决定何时调用哪个工具、传什么参数。
 
-`/mcp` 页下列出全部 19 个真实安全 MCP 服务器，重点包括：HexStrike AI（150+ 工具）、Prowler（云合规 CIS）、Ghidra（逆向）、Burp Suite、Shodan、VirusTotal、SonarQube、REMnux、Cisco AI Defense MCP Scanner、Snyk Agent Scan 等。
+`/mcp` 页下列出全部 24 个真实安全 MCP 服务器，重点包括：HexStrike AI（150+ 工具）、Prowler（云合规 CIS）、Ghidra（逆向）、Burp Suite、Shodan、VirusTotal、SonarQube、REMnux、Cisco AI Defense MCP Scanner、Snyk Agent Scan 等。
 
 ### Agent Skills · `SKILL.md` 操作手册
 
@@ -227,10 +227,10 @@ components/                  Header / MobileToolbar / CommandMenu /
                             FavoritesDrawer / ExploreHero / ExploreCard /
                             project-detail / markdown / mermaid / ui
 lib/
-├── tools.ts                96 个工具元数据（单一数据源）
-├── cheatsheets.ts          60 个场景 SOP
+├── tools.ts                111 个工具元数据（单一数据源）
+├── cheatsheets.ts          55 个场景 SOP
 ├── executors.ts            白名单调试工具 + 参数校验
-├── github-projects.ts      44 个 AI 生态项目（GitHub API 校验）
+├── github-projects.ts      49 个 AI 生态项目（GitHub API 校验）
 ├── agents.ts               13 个安全 AI Agent + 分类
 ├── theme.ts                明 / 暗 / 跟随系统 + 6 个 accent 预设
 ├── favorites.ts            localStorage 收藏 store
