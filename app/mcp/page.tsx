@@ -1,7 +1,20 @@
 import { Suspense } from "react";
 import McpSkillsClient from "./mcp-skills-client";
-import { mcpProjects, skillProjects } from "@/lib/github-projects";
+import { mcpProjects, skillProjects, networkProjects } from "@/lib/github-projects";
 import { itemListFromSlugs } from "@/lib/aeo";
+
+// networkProjects is a mixed bag on disk: most are network MCPs (kubeshark,
+// wiremcp, prometheus, netbox, sharkmcp, domain-mcp, itmcp) plus 2 skills
+// (devops-security-agent-skills, awesome-sre-skills). Merge the MCP-kind ones
+// into the MCP list so /mcp shows all 24 MCPs, not just the 17 in mcpProjects.
+const allMcp = [
+  ...mcpProjects,
+  ...networkProjects.filter((p) => p.kind === "mcp"),
+];
+const allSkill = [
+  ...skillProjects,
+  ...networkProjects.filter((p) => p.kind === "skill"),
+];
 
 export const metadata = {
   title: "MCP 工具与 Skills · SecToolbox",
@@ -10,7 +23,7 @@ export const metadata = {
 };
 
 export default function McpSkillsPage() {
-  const all = [...mcpProjects, ...skillProjects];
+  const all = [...allMcp, ...allSkill];
   return (
     <>
       <script
@@ -26,7 +39,7 @@ export default function McpSkillsPage() {
         }}
       />
       <Suspense fallback={<div className="container py-10 text-muted-foreground">加载中...</div>}>
-        <McpSkillsClient />
+        <McpSkillsClient mcpProjects={allMcp} skillProjects={allSkill} />
       </Suspense>
     </>
   );

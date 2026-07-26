@@ -10,8 +10,6 @@ import { useState, useMemo, useEffect } from "react";
 import { useSearchParams, useRouter, usePathname } from "next/navigation";
 import { Sparkles, Wrench, Code, Star } from "lucide-react";
 import {
-  mcpProjects,
-  skillProjects,
   securityAreas,
   type GitHubProject,
   type SecurityArea,
@@ -24,7 +22,16 @@ import { ExploreSearch } from "@/components/explore-search";
 import { ExploreSection } from "@/components/explore-section";
 import { EmptyResults } from "@/components/empty-results";
 
-export default function McpSkillsClient() {
+// MCP and Skill lists are passed in as props from the server component so
+// that we can merge in MCP-kind entries from networkProjects (which holds
+// 7 network MCPs on disk that aren't in the main mcpProjects array).
+export default function McpSkillsClient({
+  mcpProjects,
+  skillProjects,
+}: {
+  mcpProjects: GitHubProject[];
+  skillProjects: GitHubProject[];
+}) {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
