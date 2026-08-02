@@ -4,7 +4,7 @@
 
 **A one-stop network-security triage handbook for red teams, blue teams, DFIR, and security engineers**
 
-111 tools · 13 categories · 55 real-world playbooks · 49 curated AI-security ecosystem projects
+111 tools · 13 categories · 55 real-world playbooks · 58 curated AI-security ecosystem projects
 
 [![Next.js](https://img.shields.io/badge/Next.js-16-black?style=flat-square&logo=next.js)](https://nextjs.org)
 [![TypeScript](https://img.shields.io/badge/TypeScript-strict-3178c6?style=flat-square&logo=typescript)](https://www.typescriptlang.org)
@@ -70,31 +70,31 @@ Beyond reading, the site lets you **do** the work: a built-in ⌘K palette searc
 
 ## 🤖 The Three AI-Security Ecosystems
 
-The project curates **49 GitHub-API-validated** open-source projects (data source: [`lib/github-projects.ts`](lib/github-projects.ts)).
+The project curates **58 GitHub-API-validated** open-source projects (data source: [`lib/github-projects.ts`](lib/github-projects.ts)).
 
 | Section | Count | Path | Purpose |
 |---|---|---|---|
-| MCP servers | **24** | `/mcp` (MCP tab) | Wrap local CLIs / online services into "tools" an AI can call |
-| Agent Skills | **12** | `/mcp` (Skills tab) | Give an AI an operating manual via `SKILL.md` — how to reason and execute step by step |
-| Security AI agents | **13** | `/agents` | End-to-end autonomous agents that run pentests / vuln scans / threat intel by themselves |
+| MCP servers | **28** | `/mcp` (MCP tab) | Wrap local CLIs / online services into "tools" an AI can call |
+| Agent Skills | **14** | `/mcp` (Skills tab) | Give an AI an operating manual via `SKILL.md` — how to reason and execute step by step |
+| Security AI agents | **16** | `/agents` | End-to-end autonomous agents that run pentests / vuln scans / threat intel by themselves |
 
 ### MCP tools · Model Context Protocol
 
 MCP ([modelcontextprotocol.io](https://modelcontextprotocol.io)) is Anthropic's open standard for AI tool invocation. In one sentence: **wrap any tool — nmap, sqlmap, Shodan — into an endpoint an AI can call on demand.** Given a tool description plus an input schema, the LLM decides when to call which tool and with what arguments.
 
-The 24 real security MCP servers are listed under `/mcp`; highlights include HexStrike AI (150+ tools), Prowler (cloud CIS), Ghidra (RE), Burp Suite, Shodan, VirusTotal, SonarQube, REMnux, Cisco AI Defense MCP Scanner, Snyk Agent Scan, and CVE intelligence.
+The 28 real security MCP servers are listed under `/mcp`; highlights include HexStrike AI (150+ tools), Prowler (cloud CIS), Ghidra (RE), Burp Suite, Shodan, VirusTotal, SonarQube, REMnux, Cisco AI Defense MCP Scanner, Snyk Agent Scan, Pentest-AI (205 tools), and CVE intelligence.
 
 ### Agent Skills · the `SKILL.md` operating manual
 
 Skills are the reusable agent-capability format that emerged in 2025–2026: a directory containing a `SKILL.md` (YAML frontmatter + Markdown body) describing what the skill does, what inputs it needs, what rules to follow, and how to execute step by step. An AI agent loads these `SKILL.md` files at startup and instantly gains domain-expert capability.
 
-The 12 real Agent Skills repositories are listed under `/mcp` (Skills tab); highlights include the Anthropic-authored spec, Superpowers (full SDLC methodology), Claude-Red (58 offensive skills), Obsidian Skills, Microsoft Skills, and Prompt Security's ClawSec.
+The 14 real Agent Skills repositories are listed under `/mcp` (Skills tab); highlights include the Anthropic-authored spec, Superpowers (full SDLC methodology), Claude-Red (58 offensive skills), Obsidian Skills, Microsoft Skills, Prompt Security's ClawSec, and the 817-skill Anthropic Cybersecurity Skills collection.
 
 ### Security AI agents · end-to-end autonomy
 
 Unlike MCP / Skills, which "give the AI tools," **an agent takes over the task itself** — you say "scan this subnet," and it decides which tools to run, how to make decisions, and how to write the report.
 
-The 13 real security AI agents are listed under `/agents`; highlights include Strix (autonomous PoC), PentestGPT (USENIX-published), NVIDIA garak (LLM vuln scanner), Meta PurpleLlama, Protect AI Vulnhuntr (zero-shot static analysis), and CAI from Alias Robotics.
+The 16 real security AI agents are listed under `/agents`; highlights include Strix (autonomous PoC), PentestGPT (USENIX-published), NVIDIA garak (LLM vuln scanner), Meta PurpleLlama, Protect AI Vulnhuntr (zero-shot static analysis), CAI from Alias Robotics, and Microsoft's Agent Governance Toolkit.
 
 ### How the three relate — one diagram
 
@@ -232,7 +232,7 @@ lib/
 ├── tools.ts                111 tool entries (single source of truth)
 ├── cheatsheets.ts          55 playbook SOPs
 ├── executors.ts            whitelisted debug tools + arg validation
-├── github-projects.ts      49 AI ecosystem projects (GitHub-API validated)
+├── github-projects.ts      58 AI ecosystem projects (GitHub-API validated)
 ├── agents.ts               13 security AI agents + categories
 ├── theme.ts                light / dark / system + 6 accent presets
 ├── favorites.ts            localStorage-backed favorites store

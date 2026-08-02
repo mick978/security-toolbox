@@ -4,7 +4,7 @@
 
 **面向红队 / 蓝队 / DFIR / 安全工程师的一站式网络安全排查手册**
 
-111 个工具 · 13 大分类 · 55 个实战场景 · 49 个精选 AI 安全生态项目
+111 个工具 · 13 大分类 · 55 个实战场景 · 58 个精选 AI 安全生态项目
 
 [![Next.js](https://img.shields.io/badge/Next.js-16-black?style=flat-square&logo=next.js)](https://nextjs.org)
 [![TypeScript](https://img.shields.io/badge/TypeScript-strict-3178c6?style=flat-square&logo=typescript)](https://www.typescriptlang.org)
@@ -70,31 +70,31 @@
 
 ## 🤖 三大 AI 安全生态
 
-本项目收录 **49 个经 GitHub API 校验** 的开源项目（数据源：[`lib/github-projects.ts`](lib/github-projects.ts)）。
+本项目收录 **58 个经 GitHub API 校验** 的开源项目（数据源：[`lib/github-projects.ts`](lib/github-projects.ts)）。
 
 | 板块 | 数量 | 路径 | 作用 |
 |---|---|---|---|
-| MCP 服务器 | **24** | `/mcp`（MCP 标签） | 把本地命令行 / 在线服务封装成 AI 可调用的「工具」 |
-| Agent Skills | **12** | `/mcp`（Skills 标签） | 用 `SKILL.md` 给 AI 写「操作手册」，规定它怎么思考、怎么分步执行 |
-| 安全 AI Agent | **13** | `/agents` | 端到端接管任务的自动代理，自主渗透 / 漏洞扫描 / 威胁情报 |
+| MCP 服务器 | **28** | `/mcp`（MCP 标签） | 把本地命令行 / 在线服务封装成 AI 可调用的「工具」 |
+| Agent Skills | **14** | `/mcp`（Skills 标签） | 用 `SKILL.md` 给 AI 写「操作手册」，规定它怎么思考、怎么分步执行 |
+| 安全 AI Agent | **16** | `/agents` | 端到端接管任务的自动代理，自主渗透 / 漏洞扫描 / 威胁情报 |
 
 ### MCP 工具 · Model Context Protocol
 
 MCP（[modelcontextprotocol.io](https://modelcontextprotocol.io)）是 Anthropic 提出的「AI 工具调用」标准协议。核心思想：**把 nmap、sqlmap、Shodan 等任意工具封装成一个 AI 可随时调用的 endpoint**。LLM 拿到「工具描述 + 输入 schema」后，自动决定何时调用哪个工具、传什么参数。
 
-`/mcp` 页下列出全部 24 个真实安全 MCP 服务器，重点包括：HexStrike AI（150+ 工具）、Prowler（云合规 CIS）、Ghidra（逆向）、Burp Suite、Shodan、VirusTotal、SonarQube、REMnux、Cisco AI Defense MCP Scanner、Snyk Agent Scan 等。
+`/mcp` 页下列出全部 28 个真实安全 MCP 服务器，重点包括：HexStrike AI（150+ 工具）、Prowler（云合规 CIS）、Ghidra（逆向）、Burp Suite、Shodan、VirusTotal、SonarQube、REMnux、Cisco AI Defense MCP Scanner、Snyk Agent Scan、Pentest-AI（205 工具）等。
 
 ### Agent Skills · `SKILL.md` 操作手册
 
 Skills 是 2025–2026 兴起的 **Agent 可复用能力包** 形态：一个目录里放一个 `SKILL.md`（YAML frontmatter + Markdown 正文），描述「这个技能做什么、需要什么输入、遵循什么规则、分几步执行」。AI Agent 启动时加载这些 `SKILL.md`，即可立刻获得该领域的专家能力。
 
-`/mcp` 的 Skills 标签下列出全部 12 个真实仓库，重点包括：Anthropic 规范定义者、Superpowers（完整 SDLC 方法论）、Claude-Red（58 个进攻技能）、Obsidian Skills、Microsoft Skills、Prompt Security 的 ClawSec 等。
+`/mcp` 的 Skills 标签下列出全部 14 个真实仓库，重点包括：Anthropic 规范定义者、Superpowers（完整 SDLC 方法论）、Claude-Red（58 个进攻技能）、Obsidian Skills、Microsoft Skills、Prompt Security 的 ClawSec、以及 817 技能的 Anthropic Cybersecurity Skills 集合等。
 
 ### 安全 AI Agent · 端到端自动代理
 
 跟 MCP / Skills 这种「给 AI 加工具」不同，**Agent 是直接接管任务** —— 你说一句「扫一下这个网段」，它自己决定怎么调工具、怎么做决策、怎么写报告。
 
-`/agents` 页下列出全部 13 个真实安全 AI Agent，重点包括：Strix（自动 PoC）、PentestGPT（USENIX 论文）、NVIDIA garak（LLM 漏洞扫描）、Meta PurpleLlama、Protect AI Vulnhuntr（零样本静态分析）、Alias Robotics 的 CAI 等。
+`/agents` 页下列出全部 16 个真实安全 AI Agent，重点包括：Strix（自动 PoC）、PentestGPT（USENIX 论文）、NVIDIA garak（LLM 漏洞扫描）、Meta PurpleLlama、Protect AI Vulnhuntr（零样本静态分析）、Alias Robotics 的 CAI、微软 Agent Governance Toolkit 等。
 
 ### 三者关系 — 一张图看懂
 
@@ -230,7 +230,7 @@ lib/
 ├── tools.ts                111 个工具元数据（单一数据源）
 ├── cheatsheets.ts          55 个场景 SOP
 ├── executors.ts            白名单调试工具 + 参数校验
-├── github-projects.ts      49 个 AI 生态项目（GitHub API 校验）
+├── github-projects.ts      58 个 AI 生态项目（GitHub API 校验）
 ├── agents.ts               13 个安全 AI Agent + 分类
 ├── theme.ts                明 / 暗 / 跟随系统 + 6 个 accent 预设
 ├── favorites.ts            localStorage 收藏 store
